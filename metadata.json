@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Copy of نظام مواظب الاحترافي",
+  "description": "Professional Attendance and Departure Management System with smart analytics, overtime calculation, and performance ranking.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
