@@ -26,7 +26,7 @@ import {
     upsertSingleLog
 } from './supabaseClient';
 import { AnimatePresence } from 'framer-motion';
-import { Cloud, Loader2 } from 'lucide-react';
+import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -375,14 +375,42 @@ function App() {
       addLog('DELETE', `User: ${user?.name}`, 'حذف موظف من النظام');
   };
 
-  // --- Loading Screen ---
+  // --- Beautiful Loading Screen ---
   if (isLoading) {
       return (
-          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white gap-4">
-              <Loader2 size={48} className="animate-spin text-blue-600" />
-              <div className="flex flex-col items-center gap-2">
-                  <h2 className="text-xl font-bold">جاري الاتصال بقاعدة البيانات...</h2>
-                  <p className="text-slate-400 text-sm">يتم جلب البيانات من Supabase</p>
+          <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060B18] text-white relative overflow-hidden font-sans" dir="rtl">
+              {/* Background Effects */}
+              <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse"></div>
+              <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse animation-delay-2000"></div>
+
+              <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
+                  {/* Logo / Icon */}
+                  <div className="relative">
+                      <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full animate-pulse"></div>
+                      <div className="w-28 h-28 bg-gradient-to-tr from-slate-800 to-slate-900 rounded-[2.5rem] border border-white/10 flex items-center justify-center shadow-2xl relative rotate-3">
+                           <Fingerprint size={56} className="text-blue-500 animate-pulse drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+                      </div>
+                  </div>
+
+                  {/* Text */}
+                  <div className="text-center space-y-4">
+                      <h1 className="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
+                          مواظب <span className="text-blue-500">PRO</span>
+                      </h1>
+                      <div className="flex flex-col items-center gap-3">
+                          <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
+                              <Loader2 size={16} className="animate-spin text-blue-400" />
+                              <span className="text-sm font-bold text-slate-300">جاري تهيئة النظام...</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-medium">يرجى الانتظار، يتم جلب البيانات</p>
+                      </div>
+                  </div>
+              </div>
+              
+              <div className="absolute bottom-10 text-center">
+                  <p className="text-[10px] text-slate-600 font-mono tracking-widest uppercase opacity-50">
+                      SECURE SYSTEM INITIALIZATION v1.0
+                  </p>
               </div>
           </div>
       );
