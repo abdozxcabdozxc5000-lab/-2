@@ -116,6 +116,30 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
       }
   };
 
+  // Shared function to execute the punch after checks are passed
+  const executePunch = (empId: string, locData: any, photoData?: string) => {
+      setScanning(true);
+      setShowCamera(false); // Ensure camera is closed if it was open
+
+      // Simulate processing delay for UX
+      setTimeout(() => {
+          const result = onDevicePunch(empId, locData, photoData);
+          const emp = employees.find(e => e.id === empId);
+          
+          const newLog = {
+              id: Date.now().toString(),
+              msg: `${emp?.name}: ${result.message}`,
+              type: result.status === 'error' ? 'error' as const : 'success' as const,
+              time: result.time
+          };
+
+          setLogs(prev => [newLog, ...prev].slice(0, 10)); 
+          setScanning(false);
+          setCapturedPhoto(null);
+          if (!isEmployeeRole) setSelectedId(''); 
+      }, 1200);
+  };
+
   const handleStartPunch = () => {
     if (!selectedId) return;
 
@@ -125,6 +149,8 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
     // Get Branch Specific Config dynamically based on the employee being punched
     const empBranch = employee.branch === 'factory' ? 'factory' : 'office';
     const empSettings = safeConfig[empBranch];
+
+    let locInfo = null;
 
     // STEP 1: Strict Geofencing Check
     if (empSettings.locationEnabled) {
@@ -146,7 +172,7 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
 
         const allowedRadius = empSettings.radius || 100;
         const inRange = distance <= allowedRadius;
-        const locInfo = { lat: currentLocation.lat, lng: currentLocation.lng, inRange, distance };
+        locInfo = { lat: currentLocation.lat, lng: currentLocation.lng, inRange, distance };
         setTempLocationData(locInfo);
 
         if (!inRange) {
@@ -163,9 +189,16 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
         }
     }
 
-    // STEP 2: Location is OK -> Open Camera
-    setShowCamera(true);
-    setTimeout(() => startCamera(), 300);
+    // STEP 2: Photo verification Logic
+    // Factory -> Requires Camera
+    // Office -> Skips Camera
+    if (empBranch === 'factory') {
+        setShowCamera(true);
+        setTimeout(() => startCamera(), 300);
+    } else {
+        // Office Employee: Direct Punch without photo
+        executePunch(selectedId, locInfo, undefined);
+    }
   };
 
   const capturePhoto = () => {
@@ -187,26 +220,8 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
 
   const finalizePunch = () => {
     if (!capturedPhoto) return;
-    
-    setScanning(true);
-    setShowCamera(false);
-
-    setTimeout(() => {
-        const result = onDevicePunch(selectedId, tempLocationData, capturedPhoto);
-        const emp = employees.find(e => e.id === selectedId);
-        
-        const newLog = {
-            id: Date.now().toString(),
-            msg: `${emp?.name}: ${result.message}`,
-            type: result.status === 'error' ? 'error' as const : 'success' as const,
-            time: result.time
-        };
-
-        setLogs(prev => [newLog, ...prev].slice(0, 10)); 
-        setScanning(false);
-        setCapturedPhoto(null);
-        if (!isEmployeeRole) setSelectedId(''); 
-    }, 1200);
+    // For factory/camera flow, we use the stored tempLocationData
+    executePunch(selectedId, tempLocationData, capturedPhoto);
   };
 
   return (
