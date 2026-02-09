@@ -13,6 +13,7 @@ interface SettingsProps {
   onRoleChange: (role: UserRole) => void;
   onResetData?: () => void;
   darkMode?: boolean;
+  notify: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 // Component to handle map clicks
@@ -36,7 +37,7 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
   return null;
 };
 
-const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, darkMode }) => {
+const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, darkMode, notify }) => {
   const [localConfig, setLocalConfig] = useState<AppConfig>({
       ...DEFAULT_CONFIG,
       ...config,
@@ -114,15 +115,16 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
                       lng: position.coords.longitude
                   });
                   setIsLocating(false);
+                  notify("تم تحديث الموقع بنجاح بناءً على مكانك الحالي.", "success");
               },
               (error) => {
-                  alert("فشل في جلب الموقع. تأكد من تفعيل الـ GPS والسماح للمتصفح بالوصول للموقع.");
+                  notify("فشل في جلب الموقع. تأكد من تفعيل الـ GPS والسماح للمتصفح بالوصول للموقع.", "error");
                   setIsLocating(false);
               },
               { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
           );
       } else {
-          alert("المتصفح لا يدعم تحديد الموقع");
+          notify("المتصفح لا يدعم تحديد الموقع", "error");
           setIsLocating(false);
       }
   };
@@ -136,11 +138,12 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
         if (data && data.length > 0) {
             const { lat, lon } = data[0];
             updateBranchSettings(activeTab, { lat: parseFloat(lat), lng: parseFloat(lon) });
+            notify("تم العثور على الموقع وتحديث الإحداثيات.", "success");
         } else {
-            alert('لم يتم العثور على الموقع. حاول كتابة اسم المدينة أو المنطقة.');
+            notify('لم يتم العثور على الموقع. حاول كتابة اسم المدينة أو المنطقة.', "error");
         }
     } catch (e) {
-        alert('حدث خطأ أثناء البحث. تأكد من اتصالك بالإنترنت.');
+        notify('حدث خطأ أثناء البحث. تأكد من اتصالك بالإنترنت.', "error");
     } finally {
         setIsSearching(false);
     }
@@ -160,9 +163,9 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
           const lng = parseFloat(match[2]);
           updateBranchSettings(activeTab, { lat, lng });
           setGoogleMapsUrl(''); // Clear input on success
-          alert('تم استخراج الموقع بنجاح!');
+          notify('تم استخراج الموقع وتحديث الإحداثيات بنجاح!', 'success');
       } else {
-          alert('تعذر استخراج الإحداثيات من الرابط. تأكد من نسخ رابط كامل من شريط العنوان في المتصفح بعد تحديد الموقع.');
+          notify('تعذر استخراج الإحداثيات. تأكد من نسخ رابط كامل من المتصفح.', 'error');
       }
   };
 
