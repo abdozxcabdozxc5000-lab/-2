@@ -159,7 +159,7 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
                     <p className="text-slate-500 font-bold mt-1">تقرير شهر {monthName} {selectedYear}</p>
                 </div>
                 <div className="text-left">
-                    <h2 className="text-2xl font-black text-blue-600">مواظب PRO</h2>
+                    <h2 className="text-xl font-black text-blue-600">برنامج الحضور والانصراف</h2>
                     <p className="text-[10px] text-slate-400 font-mono tracking-widest">{new Date().toLocaleDateString('ar-EG')}</p>
                 </div>
             </div>
@@ -237,7 +237,7 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
                                 <p className="text-slate-500 font-bold mt-1">تقرير شهر {monthName} {selectedYear}</p>
                             </div>
                             <div className="text-left">
-                                <h2 className="text-2xl font-black text-blue-600">مواظب PRO</h2>
+                                <h2 className="text-xl font-black text-blue-600">برنامج الحضور والانصراف</h2>
                                 <p className="text-[10px] text-slate-500 font-bold">نظام إدارة الموارد البشرية</p>
                             </div>
                         </div>
@@ -342,3 +342,4 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
 };
 
 export default Reports;
+    

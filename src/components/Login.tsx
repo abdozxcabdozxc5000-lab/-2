@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Employee } from '../types';
 import { Lock, Mail, AlertCircle, Fingerprint, Eye, EyeOff, Sparkles, Sun, Coffee, Zap, Heart, Star, Check } from 'lucide-react';
@@ -130,7 +131,7 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
                         </div>
                     </div>
                     <div className="text-center">
-                        <h2 className="text-4xl font-black text-white tracking-tighter shadow-sm">مواظب <span className="text-blue-500">برو</span></h2>
+                        <h2 className="text-3xl font-black text-white tracking-tighter shadow-sm">برنامج <span className="text-blue-500">الحضور والانصراف</span></h2>
                         <div className="flex items-center justify-center gap-2 mt-2">
                              <div className="h-[2px] w-6 bg-gradient-to-l from-transparent to-emerald-500 rounded-full"></div>
                              <p className="text-emerald-400 font-bold text-[12px] uppercase tracking-[0.3em]">اللهم صلِّ على سيدنا محمد</p>
@@ -327,3 +328,4 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
 };
 
 export default Login;
+    

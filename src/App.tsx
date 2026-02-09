@@ -394,8 +394,8 @@ function App() {
 
                   {/* Text */}
                   <div className="text-center space-y-4">
-                      <h1 className="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
-                          مواظب <span className="text-blue-500">PRO</span>
+                      <h1 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
+                          برنامج <span className="text-blue-500">الحضور والانصراف</span>
                       </h1>
                       <div className="flex flex-col items-center gap-3">
                           <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
@@ -460,3 +460,4 @@ function App() {
 }
 
 export default App;
+    

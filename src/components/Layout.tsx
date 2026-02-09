@@ -64,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({
                 <Fingerprint size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-black text-slate-800 dark:text-white leading-none">مواظب <span className="text-blue-600">PRO</span></h1>
+                <h1 className="text-lg font-black text-slate-800 dark:text-white leading-none">برنامج <span className="text-blue-600">الحضور والانصراف</span></h1>
                 <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Management System</p>
               </div>
            </div>
@@ -215,3 +215,4 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 export default Layout;
+    
