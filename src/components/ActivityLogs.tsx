@@ -22,27 +22,34 @@ const ActivityLogs: React.FC<ActivityLogsProps> = ({ logs }) => {
         return matchesSearch && matchesFilter;
     });
 
-    const getActionColor = (action: ActionType) => {
+    const getActionColor = (action: ActionType, details: string = '') => {
         switch(action) {
             case 'LOGIN': return 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400';
             case 'LOGOUT': return 'text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-400';
             case 'CREATE': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
             case 'UPDATE': return 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400';
             case 'DELETE': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
-            case 'ATTENDANCE': return 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400';
+            case 'ATTENDANCE': 
+                // تمييز الانصراف بلون مختلف عن الحضور
+                if (details.includes('خروج')) return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400';
+                return 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400';
             case 'SETTINGS': return 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400';
             default: return 'text-gray-600 bg-gray-100';
         }
     };
 
-    const getActionLabel = (action: ActionType) => {
+    const getActionLabel = (action: ActionType, details: string = '') => {
         switch(action) {
             case 'LOGIN': return 'تسجيل دخول';
             case 'LOGOUT': return 'تسجيل خروج';
             case 'CREATE': return 'إضافة';
             case 'UPDATE': return 'تعديل';
             case 'DELETE': return 'حذف';
-            case 'ATTENDANCE': return 'حركة حضور';
+            case 'ATTENDANCE': 
+                // قراءة نوع الحركة من التفاصيل
+                if (details.includes('خروج')) return 'حركة انصراف';
+                if (details.includes('دخول')) return 'حركة حضور';
+                return 'حركة بصمة';
             case 'SETTINGS': return 'إعدادات';
             default: return action;
         }
@@ -108,8 +115,8 @@ const ActivityLogs: React.FC<ActivityLogsProps> = ({ logs }) => {
                                 filteredLogs.map((log) => (
                                     <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                         <td className="p-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getActionColor(log.action)}`}>
-                                                {getActionLabel(log.action)}
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getActionColor(log.action, log.details)}`}>
+                                                {getActionLabel(log.action, log.details)}
                                             </span>
                                         </td>
                                         <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
@@ -146,3 +153,4 @@ const ActivityLogs: React.FC<ActivityLogsProps> = ({ logs }) => {
 };
 
 export default ActivityLogs;
+    
