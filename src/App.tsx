@@ -25,12 +25,12 @@ import {
     deleteSingleRecord,
     upsertSingleLog
 } from './supabaseClient';
-import { calculateDistance } from './utils'; // Import helper
+import { calculateDistance } from './utils';
 import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
-// Loud notification sound (Digital Alarm Beep) - Base64 to ensure it plays immediately
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+// Loud notification sound (Digital Alarm Beep)
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -61,7 +61,6 @@ function App() {
   };
 
   const addLog = (action: ActionType, target: string, details: string) => {
-      // Optimistic Update
       const newLog: ActivityLog = {
           id: Date.now().toString(),
           actorName: currentUser?.name || 'System',
@@ -73,8 +72,6 @@ function App() {
       };
       
       setLogs(prev => [newLog, ...prev]);
-      
-      // Fire and forget to Supabase
       upsertSingleLog(newLog).catch(err => console.error("Log sync failed:", err));
   };
 
@@ -89,7 +86,7 @@ function App() {
       audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
   }, []);
 
-  // --- PROXIMITY NOTIFICATION LOGIC ---
+  // --- FAST PROXIMITY NOTIFICATION LOGIC ---
   useEffect(() => {
       if (!currentUser || !config) return;
 
@@ -105,17 +102,14 @@ function App() {
       const recordId = `${currentUser.id}-${today}`;
       const record = attendanceRecords.find(r => r.id === recordId);
       
-      // If user has checked in, reset notification for tomorrow and return
       if (record?.checkIn) {
           if (hasNotifiedProximity) setHasNotifiedProximity(false); 
           return;
       }
 
-      // If we already notified them in this session, don't spam
       if (hasNotifiedProximity) return;
 
-      // 4. Start Watching Location
-      // We use relaxed options to avoid timeouts and errors (enableHighAccuracy: false as fallback happens implicitly by browser if true fails/timesout in some implementations, but here we stick to standard watch)
+      // 4. Start Watching Location with HIGH SPEED Settings
       if ('geolocation' in navigator) {
           const watchId = navigator.geolocation.watchPosition(
               (position) => {
@@ -134,21 +128,17 @@ function App() {
                           audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
                       }
                       
-                      // SHOW NOTIFICATION
                       notify(`🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`, 'info');
-                      
-                      // Set flag to prevent loops
                       setHasNotifiedProximity(true);
                   }
               },
               (err) => {
-                  // Silently fail in background watcher to avoid annoying the user with popups
-                  console.warn("Background Geo Watcher Warning:", err.message);
+                  console.warn("Background Geo Warning (Silent):", err.message);
               },
               { 
                   enableHighAccuracy: true, 
-                  maximumAge: 30000, // Accept cached positions up to 30s old to avoid timeouts
-                  timeout: 20000     // Give it 20s to find location
+                  maximumAge: 60000, // CRITICAL: Accept cached position from last 60s for INSTANT check
+                  timeout: 20000     // Long timeout to avoid error spam
               }
           );
 
@@ -157,17 +147,12 @@ function App() {
 
   }, [currentUser, config, attendanceRecords, hasNotifiedProximity]);
 
-
-  // Helper to migrate legacy DB config to new structure
   const processLoadedConfig = (dbConfig: any): AppConfig => {
       if (!dbConfig) return DEFAULT_CONFIG;
-
-      // Start with defaults to ensure structure exists
       const newConfig: AppConfig = { ...DEFAULT_CONFIG, ...dbConfig };
 
-      // MIGRATION: If DB has old keys (companyLat) but NO factory object, map them to factory
       if (!dbConfig.factory && dbConfig.companyLat !== undefined) {
-          console.log("Migrating legacy config to factory settings...");
+          console.log("Migrating legacy config...");
           newConfig.factory = {
               ...DEFAULT_CONFIG.factory,
               lat: Number(dbConfig.companyLat),
@@ -176,21 +161,15 @@ function App() {
               locationEnabled: dbConfig.locationEnabled ?? false,
               workStartTime: dbConfig.workStartTime || DEFAULT_CONFIG.factory.workStartTime,
               workEndTime: dbConfig.workEndTime || DEFAULT_CONFIG.factory.workEndTime,
-              // Preserve old weekend setting if it exists, otherwise default
               weekendDays: DEFAULT_CONFIG.factory.weekendDays 
           };
       } else {
-          // Normal merge if factory exists
           newConfig.factory = { ...DEFAULT_CONFIG.factory, ...(dbConfig.factory || {}) };
       }
-
-      // Ensure office object exists
       newConfig.office = { ...DEFAULT_CONFIG.office, ...(dbConfig.office || {}) };
-
       return newConfig;
   };
 
-  // Load Data from Supabase
   const loadDataFromCloud = useCallback(async () => {
       setIsLoading(true);
       setCloudError(null);
@@ -201,14 +180,10 @@ function App() {
       if (data.success) {
           const fetchedEmployees = data.employees || [];
           
-          // SEEDING: If DB is empty, fill with initial mock data
           if (!fetchedEmployees || fetchedEmployees.length === 0) {
-              console.log("Database empty. Seeding initial data...");
               const defaultConfig: AppConfig = DEFAULT_CONFIG;
               const mockRecords = generateMockAttendance(INITIAL_EMPLOYEES);
-              
               await uploadAllData(INITIAL_EMPLOYEES, mockRecords, defaultConfig);
-              
               setEmployees(INITIAL_EMPLOYEES);
               setAttendanceRecords(mockRecords);
               setConfig(defaultConfig);
@@ -216,20 +191,13 @@ function App() {
               setEmployees(fetchedEmployees);
               setAttendanceRecords(data.records || []);
               setLogs(data.logs || []);
-              
-              // Process Config with Migration Logic
-              const processedConfig = processLoadedConfig(data.config);
-              setConfig(processedConfig);
+              setConfig(processLoadedConfig(data.config));
 
-              // --- AUTO LOGIN LOGIC (PERSISTENT SESSION) ---
-              // Check if there is a saved session ID in local storage
               const savedSessionId = localStorage.getItem('mowazeb_session_id');
               if (savedSessionId && !currentUser) {
                   const foundUser = fetchedEmployees.find(e => e.id === savedSessionId);
                   if (foundUser) {
-                      console.log("Auto-logging in user:", foundUser.name);
                       setCurrentUser(foundUser);
-                      // Set active tab based on role logic
                       const isTopManagement = foundUser.role === 'general_manager' || foundUser.role === 'owner';
                       setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
                   }
@@ -244,27 +212,19 @@ function App() {
           }
       }
       setIsLoading(false);
-  }, []); // Remove currentUser dependency to avoid loop
+  }, []);
 
-  // Initial Load
   useEffect(() => {
       loadDataFromCloud();
-      
       const sbConfig = getSupabaseConfig();
       if (sbConfig.isConnected) {
           subscribeToRealtime(() => {
-               // On Realtime event, re-fetch to stay in sync
                downloadAllData().then(data => {
                    if(data.success) {
                        if (data.employees) setEmployees(data.employees);
                        if (data.records) setAttendanceRecords(data.records || []);
                        if (data.logs) setLogs(data.logs);
-                       
-                       // Apply same migration logic for realtime updates
-                       if (data.config) {
-                           const processed = processLoadedConfig(data.config);
-                           setConfig(processed);
-                       }
+                       if (data.config) setConfig(processLoadedConfig(data.config));
                    }
                });
           });
@@ -273,47 +233,24 @@ function App() {
 
   const handleLogin = (user: Employee) => {
       setCurrentUser(user);
-      
-      // PERSIST SESSION: Save user ID to localStorage
       localStorage.setItem('mowazeb_session_id', user.id);
       
-      // Update: Redirect employees, managers, accountants, etc. directly to biometric page
-      // Only Top Management (General Manager & Owner) go to Dashboard
       const isTopManagement = user.role === 'general_manager' || user.role === 'owner';
-
-      if (!isTopManagement) {
-          setActiveTab('biometric');
-      } else {
-          setActiveTab('dashboard');
-      }
+      setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
 
       setTimeout(() => {
-          const logEntry: ActivityLog = {
-            id: Date.now().toString(),
-            actorName: user.name,
-            actorRole: user.role,
-            action: 'LOGIN',
-            target: 'System',
-            details: 'قام المستخدم بتسجيل الدخول',
-            timestamp: new Date().toISOString()
-        };
-        setLogs(prev => [logEntry, ...prev]);
-        upsertSingleLog(logEntry);
+          addLog('LOGIN', 'System', 'قام المستخدم بتسجيل الدخول');
       }, 500);
       notify(`مرحباً بك، ${user.name}`, 'success');
   };
 
   const handleLogout = () => {
       if (currentUser) addLog('LOGOUT', 'System', 'قام المستخدم بتسجيل الخروج');
-      
-      // CLEAR SESSION: Remove user ID from localStorage
       localStorage.removeItem('mowazeb_session_id');
-      
       setCurrentUser(null);
   };
 
   const handleUpdateRecord = async (newRecord: AttendanceRecord) => {
-      // Optimistic Update
       const updatedRecords = [...attendanceRecords];
       const existsIdx = updatedRecords.findIndex(r => r.id === newRecord.id);
       if (existsIdx >= 0) updatedRecords[existsIdx] = newRecord;
@@ -321,11 +258,7 @@ function App() {
       setAttendanceRecords(updatedRecords);
       
       const res = await upsertSingleRecord(newRecord);
-      
-      if (res?.error) {
-          console.error("Save failed:", res.error);
-          notify(`فشل الحفظ السحابي: ${res.error.message}`, 'error');
-      }
+      if (res?.error) notify(`فشل الحفظ السحابي: ${res.error.message}`, 'error');
 
       const empName = employees.find(e => e.id === newRecord.employeeId)?.name || 'مجهول';
       addLog('UPDATE', `Attendance: ${empName}`, `تعديل سجل بتاريخ ${newRecord.date}`);
@@ -338,9 +271,7 @@ function App() {
       setAttendanceRecords(prev => prev.filter(r => r.id !== id));
       
       const res = await deleteSingleRecord(id);
-      if (res?.error) {
-           notify(`فشل الحذف السحابي: ${res.error.message}`, 'error');
-      }
+      if (res?.error) notify(`فشل الحذف السحابي: ${res.error.message}`, 'error');
 
       const empName = employees.find(e => e.id === recordToDelete.employeeId)?.name || 'مجهول';
       addLog('DELETE', `Attendance: ${empName}`, `مسح سجل بتاريخ ${recordToDelete.date}`);
@@ -352,17 +283,13 @@ function App() {
       const dateStr = today.toISOString().split('T')[0];
       const timeStr = today.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       
-      // منطق التعامل مع الورديات الليلية (بعد منتصف الليل)
-      // حساب تاريخ الأمس
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-      // معرفات السجلات لليوم ولأمس
       const todayRecordId = `${employeeId}-${dateStr}`;
       const yesterdayRecordId = `${employeeId}-${yesterdayStr}`;
       
-      // البحث عن السجلات
       const todayRecord = attendanceRecords.find(r => r.id === todayRecordId);
       const yesterdayRecord = attendanceRecords.find(r => r.id === yesterdayRecordId);
       
@@ -372,8 +299,6 @@ function App() {
       let status: 'in' | 'out' | 'error' = 'in';
       let message = '';
       
-      // السيناريو 1: يوجد سجل دخول مفتوح من يوم أمس (لم يتم تسجيل خروج له)
-      // إذا كانت الساعة الآن بعد منتصف الليل، يجب إغلاق وردية الأمس بدلاً من فتح وردية جديدة لليوم
       if (yesterdayRecord && yesterdayRecord.checkIn && !yesterdayRecord.checkOut) {
           newRecord = { 
               ...yesterdayRecord, 
@@ -386,35 +311,26 @@ function App() {
           
           setAttendanceRecords(prev => prev.map(r => r.id === yesterdayRecordId ? newRecord : r));
           addLog('ATTENDANCE', `Device: ${employeeName}`, `خروج ليلية (بعد 12 ص) ${timeStr}`);
-          upsertSingleRecord(newRecord).then(res => {
-             if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error');
-          });
+          upsertSingleRecord(newRecord).then(res => { if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error'); });
           notify(`تم تسجيل انصراف ${employeeName} (وردية أمس)`, 'success');
           
           return { status, time: timeStr, message };
       }
 
-      // السيناريو 2: التعامل الطبيعي مع اليوم الحالي
       if (!todayRecord) {
-          // تسجيل دخول جديد لليوم
           newRecord = { id: todayRecordId, employeeId, date: dateStr, checkIn: timeStr, status: 'present', source: 'device', location, photo };
           message = `تم تسجيل دخول ${timeStr}`;
           setAttendanceRecords(prev => [...prev, newRecord]);
           addLog('ATTENDANCE', `Device: ${employeeName}`, `دخول ${timeStr}`);
-          upsertSingleRecord(newRecord).then(res => {
-             if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error');
-          });
+          upsertSingleRecord(newRecord).then(res => { if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error'); });
           notify(`تم تسجيل حضور ${employeeName}`, 'success');
       } else if (todayRecord.checkIn && !todayRecord.checkOut) {
-          // تسجيل خروج لليوم الحالي
           newRecord = { ...todayRecord, checkOut: timeStr, source: 'device', photo: photo || todayRecord.photo };
           message = `تم تسجيل خروج ${timeStr}`;
           status = 'out';
           setAttendanceRecords(prev => prev.map(r => r.id === todayRecordId ? newRecord : r));
           addLog('ATTENDANCE', `Device: ${employeeName}`, `خروج ${timeStr}`);
-          upsertSingleRecord(newRecord).then(res => {
-             if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error');
-          });
+          upsertSingleRecord(newRecord).then(res => { if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error'); });
           notify(`تم تسجيل انصراف ${employeeName}`, 'success');
       } else {
           return { status: 'error', time: timeStr, message: 'تم التسجيل مسبقاً لهذا اليوم' };
@@ -436,7 +352,6 @@ function App() {
       
       setEmployees(prev => [...prev, newUser]);
       const res = await upsertSingleEmployee(newUser);
-      
       if (res?.error) notify(`فشل حفظ المستخدم: ${res.error.message}`, 'error');
       addLog('CREATE', `User: ${user.name}`, 'إضافة موظف جديد');
   };
@@ -457,24 +372,18 @@ function App() {
       addLog('DELETE', `User: ${user?.name}`, 'حذف موظف من النظام');
   };
 
-  // --- Beautiful Loading Screen ---
   if (isLoading) {
       return (
           <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060B18] text-white relative overflow-hidden font-sans" dir="rtl">
-              {/* Background Effects */}
               <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse"></div>
               <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse animation-delay-2000"></div>
-
               <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
-                  {/* Logo / Icon */}
                   <div className="relative">
                       <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full animate-pulse"></div>
                       <div className="w-28 h-28 bg-gradient-to-tr from-slate-800 to-slate-900 rounded-[2.5rem] border border-white/10 flex items-center justify-center shadow-2xl relative rotate-3">
                            <Fingerprint size={56} className="text-blue-500 animate-pulse drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
                       </div>
                   </div>
-
-                  {/* Text */}
                   <div className="text-center space-y-4">
                       <h1 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
                           برنامج <span className="text-blue-500">الحضور والانصراف</span>
@@ -484,30 +393,20 @@ function App() {
                               <Loader2 size={16} className="animate-spin text-blue-400" />
                               <span className="text-sm font-bold text-slate-300">جاري تهيئة النظام...</span>
                           </div>
-                          <p className="text-[10px] text-slate-500 font-medium">يرجى الانتظار، يتم جلب البيانات</p>
                       </div>
                   </div>
-              </div>
-              
-              <div className="absolute bottom-10 text-center">
-                  <p className="text-[10px] text-slate-600 font-mono tracking-widest uppercase opacity-50">
-                      SECURE SYSTEM INITIALIZATION v1.0
-                  </p>
               </div>
           </div>
       );
   }
 
-  // --- Error Screen ---
   if (cloudError && employees.length === 0) {
       return (
           <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 text-red-500 gap-4 p-8 text-center">
               <Cloud size={64} />
               <h2 className="text-2xl font-bold">فشل الاتصال بالنظام السحابي</h2>
               <p className="text-slate-600 dark:text-slate-300 max-w-md">{cloudError}</p>
-              <button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold mt-4 hover:bg-blue-700">
-                  إعادة المحاولة
-              </button>
+              <button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold mt-4 hover:bg-blue-700">إعادة المحاولة</button>
           </div>
       );
   }

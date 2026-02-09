@@ -118,7 +118,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                   alert("فشل في جلب الموقع. تأكد من تفعيل الـ GPS والسماح للمتصفح بالوصول للموقع.");
                   setIsLocating(false);
               },
-              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+              { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
           );
       } else {
           alert("المتصفح لا يدعم تحديد الموقع");
@@ -148,11 +148,6 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
   const handleExtractFromGoogleUrl = () => {
       if (!googleMapsUrl) return;
 
-      // Regular expressions to catch coordinates in Google Maps URLs
-      // Format 1: @30.0594885,31.1884236
-      // Format 2: ?q=30.0594885,31.1884236
-      // Format 3: search/30.0594885,31.1884236
-      
       const regexLatLong = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
       const regexQ = /q=(-?\d+\.\d+),(-?\d+\.\d+)/;
       const regexSearch = /search\/(-?\d+\.\d+),(-?\d+\.\d+)/;

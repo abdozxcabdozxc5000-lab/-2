@@ -34,7 +34,6 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
 
   const isEmployeeRole = currentUser.role === 'employee';
 
-  // Ensure config has fallback defaults (Safety Merge)
   const safeConfig = useMemo(() => ({
       ...DEFAULT_CONFIG,
       ...config,
@@ -42,11 +41,9 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
       factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) }
   }), [config]);
 
-  // Determine current user's branch for UI display
   const userBranch = currentUser.branch === 'factory' ? 'factory' : 'office';
   const targetSettings = safeConfig[userBranch];
 
-  // Filter employees for Office Manager
   const visibleEmployees = useMemo(() => {
     if (currentUser.role === 'office_manager') {
         return employees.filter(e => e.branch === 'office');
@@ -60,13 +57,12 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
   }, []);
 
   useEffect(() => {
-    // Automatically select the logged-in user to facilitate quick attendance registration for everyone
     if (currentUser && !selectedId) {
         setSelectedId(currentUser.id);
     }
   }, [currentUser, selectedId]);
 
-  // Handle Geolocation Access based on user's branch setting
+  // Handle Geolocation Access with High Speed Cached Strategy
   useEffect(() => {
       if (targetSettings.locationEnabled) {
           if ('geolocation' in navigator) {
@@ -76,11 +72,20 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
                       setLocationError(null);
                   },
                   (err) => {
-                      let msg = "خطأ في تحديد الموقع";
-                      if (err.code === 1) msg = "يرجى السماح بالوصول للموقع الجغرافي (GPS)";
-                      setLocationError(msg);
+                      // Fallback: If high accuracy times out or fails, browser usually tries normal anyway,
+                      // but we handle specific errors to guide user.
+                      let msg = "جاري تحديد الموقع...";
+                      if (err.code === 1) msg = "يرجى تفعيل الـ GPS والسماح للمتصفح بالوصول.";
+                      else if (err.code === 3) msg = "إشارة GPS ضعيفة، جاري المحاولة...";
+                      
+                      // Don't show error immediately if it's a timeout, give it a moment as watchPosition keeps trying
+                      if (err.code !== 3) setLocationError(msg);
                   },
-                  { enableHighAccuracy: true }
+                  { 
+                      enableHighAccuracy: true, 
+                      maximumAge: 60000, // CRITICAL: Accept location from last 60s for INSTANT fix
+                      timeout: 15000     // Wait 15s before complaining about timeout
+                  }
               );
               return () => navigator.geolocation.clearWatch(watchId);
           } else {
@@ -116,12 +121,10 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
       }
   };
 
-  // Shared function to execute the punch after checks are passed
   const executePunch = (empId: string, locData: any, photoData?: string) => {
       setScanning(true);
-      setShowCamera(false); // Ensure camera is closed if it was open
+      setShowCamera(false); 
 
-      // Simulate processing delay for UX
       setTimeout(() => {
           const result = onDevicePunch(empId, locData, photoData);
           const emp = employees.find(e => e.id === empId);
@@ -146,13 +149,11 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
     const employee = employees.find(e => e.id === selectedId);
     if (!employee) return;
 
-    // Get Branch Specific Config dynamically based on the employee being punched
     const empBranch = employee.branch === 'factory' ? 'factory' : 'office';
     const empSettings = safeConfig[empBranch];
 
     let locInfo = null;
 
-    // STEP 1: Strict Geofencing Check
     if (empSettings.locationEnabled) {
         if (locationError) {
             alert(locationError);
@@ -185,18 +186,14 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
             setLogs(prev => [newLog, ...prev].slice(0, 10));
             
             setGeoError({ distance, limit: allowedRadius });
-            return; // STOP EXECUTION HERE
+            return; 
         }
     }
 
-    // STEP 2: Photo verification Logic
-    // Factory -> Requires Camera
-    // Office -> Skips Camera
     if (empBranch === 'factory') {
         setShowCamera(true);
         setTimeout(() => startCamera(), 300);
     } else {
-        // Office Employee: Direct Punch without photo
         executePunch(selectedId, locInfo, undefined);
     }
   };
@@ -220,7 +217,6 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
 
   const finalizePunch = () => {
     if (!capturedPhoto) return;
-    // For factory/camera flow, we use the stored tempLocationData
     executePunch(selectedId, tempLocationData, capturedPhoto);
   };
 
@@ -237,9 +233,9 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
                 </div>
                 <div className="flex items-center gap-4">
                      {targetSettings.locationEnabled && (
-                         <div className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded bg-black/40 border ${currentLocation ? 'text-blue-400 border-blue-900/50' : 'text-red-400 border-red-900/50'}`}>
+                         <div className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded bg-black/40 border ${currentLocation ? 'text-blue-400 border-blue-900/50' : 'text-amber-400 border-amber-900/50'}`}>
                              <MapPin size={12} />
-                             {currentLocation ? 'LOC_VERIFIED' : 'LOC_WAITING'}
+                             {currentLocation ? 'LOC_VERIFIED' : 'LOC_WAITING...'}
                          </div>
                      )}
                      <div className="text-slate-400 font-mono text-sm">
@@ -383,7 +379,6 @@ const BiometricSimulator: React.FC<BiometricSimulatorProps> = ({ employees, onDe
                         {!capturedPhoto ? (
                             <>
                                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
-                                {/* Selfie Guide Overlay */}
                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <div className="w-64 h-80 border-4 border-dashed border-white/40 rounded-[100px] shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]"></div>
                                 </div>
