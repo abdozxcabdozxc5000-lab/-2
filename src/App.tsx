@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import EmployeeManager from './components/EmployeeManager';
@@ -25,8 +25,12 @@ import {
     deleteSingleRecord,
     upsertSingleLog
 } from './supabaseClient';
+import { calculateDistance } from './utils'; // Import helper
 import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
+
+// Loud notification sound (Digital Alarm Beep) - Base64 to ensure it plays immediately
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -45,6 +49,10 @@ function App() {
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [isPermissionError, setIsPermissionError] = useState(false);
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
+
+  // Geo-Notification State
+  const [hasNotifiedProximity, setHasNotifiedProximity] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const notify = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
       const id = Date.now().toString();
@@ -75,6 +83,80 @@ function App() {
     else document.documentElement.classList.remove('dark');
     localStorage.setItem('mowazeb_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  // Initialize Audio
+  useEffect(() => {
+      audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+  }, []);
+
+  // --- PROXIMITY NOTIFICATION LOGIC ---
+  useEffect(() => {
+      if (!currentUser || !config) return;
+
+      // 1. Identify Branch & Settings
+      const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
+      const branchSettings = config[branchName];
+
+      // 2. Check if Location Tracking is Enabled
+      if (!branchSettings?.locationEnabled) return;
+
+      // 3. Check if ALREADY checked in for today
+      const today = new Date().toISOString().split('T')[0];
+      const recordId = `${currentUser.id}-${today}`;
+      const record = attendanceRecords.find(r => r.id === recordId);
+      
+      // If user has checked in, reset notification for tomorrow and return
+      if (record?.checkIn) {
+          if (hasNotifiedProximity) setHasNotifiedProximity(false); 
+          return;
+      }
+
+      // If we already notified them in this session, don't spam
+      if (hasNotifiedProximity) return;
+
+      // 4. Start Watching Location
+      // We use relaxed options to avoid timeouts and errors (enableHighAccuracy: false as fallback happens implicitly by browser if true fails/timesout in some implementations, but here we stick to standard watch)
+      if ('geolocation' in navigator) {
+          const watchId = navigator.geolocation.watchPosition(
+              (position) => {
+                  const currentLat = position.coords.latitude;
+                  const currentLng = position.coords.longitude;
+                  const targetLat = branchSettings.lat || 0;
+                  const targetLng = branchSettings.lng || 0;
+                  
+                  const distance = calculateDistance(currentLat, currentLng, targetLat, targetLng);
+                  const allowedRadius = branchSettings.radius || 100;
+                  
+                  // Trigger if within radius + 50m buffer
+                  if (distance <= (allowedRadius + 50)) {
+                      // PLAY SOUND
+                      if (audioRef.current) {
+                          audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
+                      }
+                      
+                      // SHOW NOTIFICATION
+                      notify(`🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`, 'info');
+                      
+                      // Set flag to prevent loops
+                      setHasNotifiedProximity(true);
+                  }
+              },
+              (err) => {
+                  // Silently fail in background watcher to avoid annoying the user with popups
+                  console.warn("Background Geo Watcher Warning:", err.message);
+              },
+              { 
+                  enableHighAccuracy: true, 
+                  maximumAge: 30000, // Accept cached positions up to 30s old to avoid timeouts
+                  timeout: 20000     // Give it 20s to find location
+              }
+          );
+
+          return () => navigator.geolocation.clearWatch(watchId);
+      }
+
+  }, [currentUser, config, attendanceRecords, hasNotifiedProximity]);
+
 
   // Helper to migrate legacy DB config to new structure
   const processLoadedConfig = (dbConfig: any): AppConfig => {
@@ -460,4 +542,3 @@ function App() {
 }
 
 export default App;
-    
