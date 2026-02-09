@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Employee } from '../types';
-import { Lock, Mail, AlertCircle, Fingerprint, Eye, EyeOff, Sparkles, Sun, Coffee, Zap, Heart, Star } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Fingerprint, Eye, EyeOff, Sparkles, Sun, Coffee, Zap, Heart, Star, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface LoginProps {
@@ -35,12 +34,23 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [dailyQuote, setDailyQuote] = useState(MOTIVATIONAL_QUOTES[0]);
     const [currentDhikr, setCurrentDhikr] = useState(DHIKR_LIST[0]);
 
     useEffect(() => {
+        // Load saved credentials if they exist
+        const savedEmail = localStorage.getItem('mowazeb_email');
+        const savedPassword = localStorage.getItem('mowazeb_password');
+        
+        if (savedEmail && savedPassword) {
+            setEmail(savedEmail);
+            setPassword(savedPassword);
+            setRememberMe(true);
+        }
+
         const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
         setDailyQuote(randomQuote);
         
@@ -68,6 +78,15 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
             );
 
             if (user) {
+                // Handle "Remember Me" (Credentials)
+                if (rememberMe) {
+                    localStorage.setItem('mowazeb_email', email);
+                    localStorage.setItem('mowazeb_password', password);
+                } else {
+                    localStorage.removeItem('mowazeb_email');
+                    localStorage.removeItem('mowazeb_password');
+                }
+                
                 onLogin(user);
             } else {
                 setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
@@ -81,21 +100,21 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
     return (
         <div className="min-h-screen w-full flex relative bg-[#060B18] text-white overflow-hidden font-sans" dir="rtl">
             
-            {/* --- خلفية Aura الإبداعية للموبايل --- */}
+            {/* --- Mobile Aura Background --- */}
             <div className="lg:hidden absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-25%] left-[-35%] w-[170%] h-[75%] bg-gradient-to-br from-blue-600/25 via-indigo-600/15 to-transparent blur-[150px] rounded-full animate-blob"></div>
                 <div className="absolute bottom-[-25%] right-[-35%] w-[150%] h-[65%] bg-gradient-to-tr from-purple-600/15 via-blue-900/20 to-transparent blur-[130px] rounded-full animate-blob animation-delay-4000"></div>
                 <div className="absolute inset-0 opacity-[0.05] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
             </div>
 
-            {/* إضاءات الكمبيوتر الثابتة */}
+            {/* Desktop Static Lights */}
             <div className="hidden lg:block absolute top-[-15%] right-[-10%] w-[500px] h-[500px] bg-blue-600/25 rounded-full blur-[120px] pointer-events-none" />
             <div className="hidden lg:block absolute bottom-[-10%] left-[-15%] w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
 
-            {/* الجانب الأيمن: نموذج الدخول */}
+            {/* Right Side: Login Form */}
             <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-4 lg:p-12 z-20 relative">
                 
-                {/* هيدر الموبايل الفني */}
+                {/* Mobile Artistic Header */}
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.7 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -120,16 +139,16 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
                     </div>
                 </motion.div>
 
-                {/* كارت الدخول الكريستالي */}
+                {/* Login Card */}
                 <motion.div 
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full max-w-md space-y-6 lg:space-y-8 bg-white/[0.04] lg:bg-transparent p-8 lg:p-0 rounded-[3.8rem] border border-white/[0.1] lg:border-none backdrop-blur-[60px] lg:backdrop-blur-none shadow-[0_60px_120px_rgba(0,0,0,0.7)] lg:shadow-none relative"
                 >
-                    {/* لمعة النانو الخلفية */}
+                    {/* Background Nano Shine */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.08] to-indigo-500/[0.08] rounded-[3.8rem] pointer-events-none"></div>
                     
-                    {/* ودجت الإلهام */}
+                    {/* Inspiration Widget */}
                     <div className="bg-white/[0.05] border border-white/[0.1] p-5 rounded-[2.8rem] flex items-center gap-4 relative overflow-hidden group shadow-inner">
                         <div className="p-4 bg-blue-600/25 rounded-2xl text-blue-300 shadow-xl border border-blue-400/20">
                             <QuoteIcon size={26} className="group-hover:rotate-12 transition-transform duration-500" />
@@ -195,6 +214,22 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
                             </button>
                         </div>
                         
+                        <div className="flex items-center justify-between px-2">
+                             <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only" 
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                    />
+                                    <div className={`w-5 h-5 rounded-md border-2 transition-all duration-200 ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-slate-500 bg-transparent group-hover:border-blue-400'}`}></div>
+                                    {rememberMe && <Check size={14} className="absolute top-0.5 left-0.5 text-white" />}
+                                </div>
+                                <span className="text-sm text-slate-400 font-bold group-hover:text-blue-400 transition-colors">تذكر بياناتي</span>
+                            </label>
+                        </div>
+
                         <button 
                             type="submit" 
                             disabled={isLoading}
@@ -209,7 +244,7 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
                         </button>
                     </form>
 
-                    {/* تذييل الموبايل الروحاني - تم إزالة جملة نظام إدارة المواظب */}
+                    {/* Spiritual Mobile Footer */}
                     <div className="lg:hidden text-center pt-10 border-t border-white/[0.1]">
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -232,7 +267,7 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
                 </motion.div>
             </div>
 
-            {/* الجانب الأيسر: الكمبيوتر (دون أي تغيير ليبقى بنفس الشكل) */}
+            {/* Left Side: PC View (Unchanged) */}
             <div className="hidden lg:flex w-1/2 relative items-center justify-center z-10 overflow-hidden">
                 <div className="absolute inset-y-0 left-0 w-[120%] bg-[#111827] transform -skew-x-6 origin-bottom-left translate-x-16 border-l border-slate-800 shadow-[0_0_100px_rgba(0,0,0,0.5)] z-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] opacity-90"></div>
