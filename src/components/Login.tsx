@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Employee } from '../types';
-import { Lock, Mail, AlertCircle, Fingerprint, Eye, EyeOff, Sparkles, Sun, Coffee, Zap, Heart, Star, Check } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Fingerprint, Eye, EyeOff, Sparkles, Sun, Coffee, Zap, Heart, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface LoginProps {
@@ -35,23 +35,12 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [dailyQuote, setDailyQuote] = useState(MOTIVATIONAL_QUOTES[0]);
     const [currentDhikr, setCurrentDhikr] = useState(DHIKR_LIST[0]);
 
-    // Load saved credentials on mount
     useEffect(() => {
-        const savedEmail = localStorage.getItem('mowazeb_email');
-        const savedPassword = localStorage.getItem('mowazeb_password');
-        
-        if (savedEmail && savedPassword) {
-            setEmail(savedEmail);
-            setPassword(savedPassword);
-            setRememberMe(true);
-        }
-
         const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
         setDailyQuote(randomQuote);
         
@@ -79,14 +68,6 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
             );
 
             if (user) {
-                // Save or remove credentials based on rememberMe
-                if (rememberMe) {
-                    localStorage.setItem('mowazeb_email', email);
-                    localStorage.setItem('mowazeb_password', password);
-                } else {
-                    localStorage.removeItem('mowazeb_email');
-                    localStorage.removeItem('mowazeb_password');
-                }
                 onLogin(user);
             } else {
                 setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
@@ -214,22 +195,6 @@ const Login: React.FC<LoginProps> = ({ employees, onLogin, isPermissionError }) 
                             </button>
                         </div>
                         
-                        <div className="flex items-center justify-between px-2">
-                             <label className="flex items-center gap-3 cursor-pointer group">
-                                <div className="relative">
-                                    <input 
-                                        type="checkbox" 
-                                        className="sr-only" 
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                    />
-                                    <div className={`w-5 h-5 rounded-md border-2 transition-all duration-200 ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-slate-500 bg-transparent group-hover:border-blue-400'}`}></div>
-                                    {rememberMe && <Check size={14} className="absolute top-0.5 left-0.5 text-white" />}
-                                </div>
-                                <span className="text-sm text-slate-400 font-bold group-hover:text-blue-400 transition-colors">تذكر بياناتي</span>
-                            </label>
-                        </div>
-
                         <button 
                             type="submit" 
                             disabled={isLoading}

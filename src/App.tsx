@@ -117,12 +117,12 @@ function App() {
       const data = await downloadAllData();
 
       if (data.success) {
+          const fetchedEmployees = data.employees || [];
+          
           // SEEDING: If DB is empty, fill with initial mock data
-          if (!data.employees || data.employees.length === 0) {
+          if (!fetchedEmployees || fetchedEmployees.length === 0) {
               console.log("Database empty. Seeding initial data...");
-              // Fix: Use correct AppConfig structure from DEFAULT_CONFIG
               const defaultConfig: AppConfig = DEFAULT_CONFIG;
-              
               const mockRecords = generateMockAttendance(INITIAL_EMPLOYEES);
               
               await uploadAllData(INITIAL_EMPLOYEES, mockRecords, defaultConfig);
@@ -131,13 +131,27 @@ function App() {
               setAttendanceRecords(mockRecords);
               setConfig(defaultConfig);
           } else {
-              setEmployees(data.employees || []);
+              setEmployees(fetchedEmployees);
               setAttendanceRecords(data.records || []);
               setLogs(data.logs || []);
               
               // Process Config with Migration Logic
               const processedConfig = processLoadedConfig(data.config);
               setConfig(processedConfig);
+
+              // --- AUTO LOGIN LOGIC (PERSISTENT SESSION) ---
+              // Check if there is a saved session ID in local storage
+              const savedSessionId = localStorage.getItem('mowazeb_session_id');
+              if (savedSessionId && !currentUser) {
+                  const foundUser = fetchedEmployees.find(e => e.id === savedSessionId);
+                  if (foundUser) {
+                      console.log("Auto-logging in user:", foundUser.name);
+                      setCurrentUser(foundUser);
+                      // Set active tab based on role logic
+                      const isTopManagement = foundUser.role === 'general_manager' || foundUser.role === 'owner';
+                      setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
+                  }
+              }
           }
       } else {
           setCloudError(data.message || 'فشل الاتصال بالنظام السحابي');
@@ -148,7 +162,7 @@ function App() {
           }
       }
       setIsLoading(false);
-  }, []);
+  }, []); // Remove currentUser dependency to avoid loop
 
   // Initial Load
   useEffect(() => {
@@ -178,6 +192,9 @@ function App() {
   const handleLogin = (user: Employee) => {
       setCurrentUser(user);
       
+      // PERSIST SESSION: Save user ID to localStorage
+      localStorage.setItem('mowazeb_session_id', user.id);
+      
       // Update: Redirect employees, managers, accountants, etc. directly to biometric page
       // Only Top Management (General Manager & Owner) go to Dashboard
       const isTopManagement = user.role === 'general_manager' || user.role === 'owner';
@@ -206,6 +223,10 @@ function App() {
 
   const handleLogout = () => {
       if (currentUser) addLog('LOGOUT', 'System', 'قام المستخدم بتسجيل الخروج');
+      
+      // CLEAR SESSION: Remove user ID from localStorage
+      localStorage.removeItem('mowazeb_session_id');
+      
       setCurrentUser(null);
   };
 
