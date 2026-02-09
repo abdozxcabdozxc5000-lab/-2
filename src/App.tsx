@@ -30,7 +30,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
 // Loud notification sound (Digital Alarm Beep)
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -49,6 +49,9 @@ function App() {
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [isPermissionError, setIsPermissionError] = useState(false);
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
+
+  // PWA Install State
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Geo-Notification State
   const [hasNotifiedProximity, setHasNotifiedProximity] = useState(false);
@@ -81,23 +84,90 @@ function App() {
     localStorage.setItem('mowazeb_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Initialize Audio
+  // Initialize Audio & PWA Prompt
   useEffect(() => {
       audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+      
+      // Request permission immediately for Notifications
+      if ('Notification' in window) {
+          Notification.requestPermission();
+      }
+
+      // Capture PWA Install Prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          setInstallPrompt(e);
+      });
   }, []);
+
+  const handleInstallApp = async () => {
+      if (!installPrompt) return;
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === 'accepted') {
+          setInstallPrompt(null);
+      }
+  };
+
+  // --- SMART SHIFT NOTIFICATION SCHEDULER ---
+  useEffect(() => {
+      if (!currentUser || !config) return;
+
+      const checkShiftTime = () => {
+          const now = new Date();
+          const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
+          const settings = config[branchName];
+          
+          if (!settings?.workStartTime) return;
+
+          const [startHour, startMinute] = settings.workStartTime.split(':').map(Number);
+          const shiftStart = new Date();
+          shiftStart.setHours(startHour, startMinute, 0, 0);
+
+          const diffMs = shiftStart.getTime() - now.getTime();
+          const diffMinutes = Math.floor(diffMs / 60000);
+
+          // Notify 15 minutes before shift OR exactly at shift start
+          if (diffMinutes === 15 || diffMinutes === 0) {
+              
+              const todayStr = now.toISOString().split('T')[0];
+              const recordId = `${currentUser.id}-${todayStr}`;
+              const hasCheckedIn = attendanceRecords.some(r => r.id === recordId && r.checkIn);
+
+              if (!hasCheckedIn) {
+                  const msg = diffMinutes === 15 
+                      ? `⏳ تنبيه: باقي 15 دقيقة على موعد حضورك في ${branchName === 'factory' ? 'المصنع' : 'المكتب'}!` 
+                      : `🚨 حان الآن موعد الحضور! يرجى تسجيل الدخول فوراً.`;
+
+                  if (Notification.permission === 'granted') {
+                      new Notification("نظام مواظب PRO", {
+                          body: msg,
+                          icon: "https://cdn-icons-png.flaticon.com/512/9320/9320288.png",
+                          requireInteraction: true
+                      });
+                  }
+
+                  notify(msg, 'info');
+                  if (audioRef.current) audioRef.current.play().catch(() => {});
+              }
+          }
+      };
+
+      const interval = setInterval(checkShiftTime, 60000);
+      checkShiftTime(); // Initial
+
+      return () => clearInterval(interval);
+  }, [currentUser, config, attendanceRecords]);
 
   // --- FAST PROXIMITY NOTIFICATION LOGIC ---
   useEffect(() => {
       if (!currentUser || !config) return;
 
-      // 1. Identify Branch & Settings
       const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
       const branchSettings = config[branchName];
 
-      // 2. Check if Location Tracking is Enabled
       if (!branchSettings?.locationEnabled) return;
 
-      // 3. Check if ALREADY checked in for today
       const today = new Date().toISOString().split('T')[0];
       const recordId = `${currentUser.id}-${today}`;
       const record = attendanceRecords.find(r => r.id === recordId);
@@ -109,7 +179,6 @@ function App() {
 
       if (hasNotifiedProximity) return;
 
-      // 4. Start Watching Location with HIGH SPEED Settings
       if ('geolocation' in navigator) {
           const watchId = navigator.geolocation.watchPosition(
               (position) => {
@@ -121,14 +190,18 @@ function App() {
                   const distance = calculateDistance(currentLat, currentLng, targetLat, targetLng);
                   const allowedRadius = branchSettings.radius || 100;
                   
-                  // Trigger if within radius + 50m buffer
                   if (distance <= (allowedRadius + 50)) {
-                      // PLAY SOUND
                       if (audioRef.current) {
                           audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
                       }
                       
-                      notify(`🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`, 'info');
+                      const msg = `🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`;
+                      notify(msg, 'info');
+                      
+                      if (Notification.permission === 'granted') {
+                          new Notification("أنت في الموقع!", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/9320/9320288.png" });
+                      }
+
                       setHasNotifiedProximity(true);
                   }
               },
@@ -137,8 +210,8 @@ function App() {
               },
               { 
                   enableHighAccuracy: true, 
-                  maximumAge: 60000, // CRITICAL: Accept cached position from last 60s for INSTANT check
-                  timeout: 20000     // Long timeout to avoid error spam
+                  maximumAge: 60000, 
+                  timeout: 20000     
               }
           );
 
@@ -237,6 +310,10 @@ function App() {
       
       const isTopManagement = user.role === 'general_manager' || user.role === 'owner';
       setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
+
+      if (Notification.permission === 'default') {
+          Notification.requestPermission();
+      }
 
       setTimeout(() => {
           addLog('LOGIN', 'System', 'قام المستخدم بتسجيل الدخول');
@@ -424,6 +501,7 @@ function App() {
         onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)}
         isSyncing={isSyncing} cloudError={cloudError}
         notifications={notifications} removeNotification={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+        installPrompt={installPrompt} onInstall={handleInstallApp}
     >
       <AnimatePresence mode="wait">
         <PageTransition key={activeTab}>
