@@ -30,7 +30,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
 // Loud notification sound (Digital Alarm Beep)
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -53,8 +53,10 @@ function App() {
   // PWA Install State
   const [installPrompt, setInstallPrompt] = useState<any>(null);
 
-  // Geo-Notification State
-  const [hasNotifiedProximity, setHasNotifiedProximity] = useState(false);
+  // Geo-Notification State - Using Session Storage to strict "ONCE PER SESSION" policy
+  const [hasNotifiedProximity, setHasNotifiedProximity] = useState(() => {
+      return typeof window !== 'undefined' && sessionStorage.getItem('mowazeb_prox_notified') === 'true';
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const notify = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
@@ -147,7 +149,8 @@ function App() {
                       });
                   }
 
-                  notify(msg, 'info');
+                  // Optional: Disable in-app notification here too if needed, but keeping for awareness
+                  // notify(msg, 'info'); 
                   if (audioRef.current) audioRef.current.play().catch(() => {});
               }
           }
@@ -159,7 +162,7 @@ function App() {
       return () => clearInterval(interval);
   }, [currentUser, config, attendanceRecords]);
 
-  // --- FAST PROXIMITY NOTIFICATION LOGIC ---
+  // --- FAST PROXIMITY NOTIFICATION LOGIC (ONCE PER SESSION) ---
   useEffect(() => {
       if (!currentUser || !config) return;
 
@@ -172,11 +175,12 @@ function App() {
       const recordId = `${currentUser.id}-${today}`;
       const record = attendanceRecords.find(r => r.id === recordId);
       
+      // If already checked in, stop tracking/notifying
       if (record?.checkIn) {
-          if (hasNotifiedProximity) setHasNotifiedProximity(false); 
           return;
       }
 
+      // If already notified in this session, stop
       if (hasNotifiedProximity) return;
 
       if ('geolocation' in navigator) {
@@ -190,19 +194,22 @@ function App() {
                   const distance = calculateDistance(currentLat, currentLng, targetLat, targetLng);
                   const allowedRadius = branchSettings.radius || 100;
                   
+                  // Trigger if within radius + 50m buffer
                   if (distance <= (allowedRadius + 50)) {
                       if (audioRef.current) {
                           audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
                       }
                       
-                      const msg = `🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`;
-                      notify(msg, 'info');
+                      const msg = `🔔 وصول مؤكد: أنت في نطاق ${branchName === 'factory' ? 'المصنع' : 'المكتب'}. سجل حضورك الآن.`;
+                      // notify(msg, 'success'); // DISABLED IN-APP NOTIFICATION TO PREVENT UI BLOCKING
                       
                       if (Notification.permission === 'granted') {
                           new Notification("أنت في الموقع!", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/9320/9320288.png" });
                       }
 
+                      // Set persistence to avoid spam
                       setHasNotifiedProximity(true);
+                      sessionStorage.setItem('mowazeb_prox_notified', 'true');
                   }
               },
               (err) => {
@@ -325,6 +332,9 @@ function App() {
       if (currentUser) addLog('LOGOUT', 'System', 'قام المستخدم بتسجيل الخروج');
       localStorage.removeItem('mowazeb_session_id');
       setCurrentUser(null);
+      // Reset session notification state so they can be notified next time they login or arrive
+      sessionStorage.removeItem('mowazeb_prox_notified');
+      setHasNotifiedProximity(false);
   };
 
   const handleUpdateRecord = async (newRecord: AttendanceRecord) => {
