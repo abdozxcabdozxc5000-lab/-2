@@ -4,7 +4,8 @@ import { DEFAULT_CONFIG } from './constants';
 
 // Permissions Logic
 export const Permissions = {
-    canManageUsers: (role: UserRole) => role === 'general_manager' || role === 'owner',
+    // Update: Allow office_manager to manage users (restricted to their branch inside the component)
+    canManageUsers: (role: UserRole) => role === 'general_manager' || role === 'owner' || role === 'office_manager',
     canManageSettings: (role: UserRole) => role === 'general_manager' || role === 'owner',
     canViewAllReports: (role: UserRole) => role !== 'employee',
     canViewAllDashboard: (role: UserRole) => role !== 'employee',

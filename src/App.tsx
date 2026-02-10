@@ -519,7 +519,7 @@ function App() {
             {activeTab === 'employees' && <EmployeeManager employees={employees} attendanceRecords={attendanceRecords} config={config} userRole={userRole} onUpdateRecord={handleUpdateRecord} onDeleteRecord={handleDeleteRecord} />}
             {activeTab === 'biometric' && <BiometricSimulator employees={employees} onDevicePunch={handleDevicePunch} currentUser={currentUser} config={config} />}
             {activeTab === 'reports' && <Reports employees={employees} attendanceRecords={attendanceRecords} config={config} currentUserRole={userRole} currentEmployeeId={currentUser.id} />}
-            {activeTab === 'users' && <UserManagement employees={employees} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
+            {activeTab === 'users' && <UserManagement employees={employees} currentUserRole={userRole} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
             {activeTab === 'logs' && <ActivityLogs logs={logs} />}
             {activeTab === 'settings' && <Settings config={config} onConfigChange={handleConfigChange} userRole={userRole} onRoleChange={() => {}} onResetData={() => {}} darkMode={darkMode} notify={notify} />}
         </PageTransition>

@@ -1,16 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Employee, UserRole } from '../types';
 import { Plus, Trash2, Shield, User, X, Mail, Key, Edit, AlertTriangle, Building, Factory } from 'lucide-react';
 
 interface UserManagementProps {
   employees: Employee[];
+  currentUserRole: UserRole; // Added to handle permissions
   onAddUser: (user: Omit<Employee, 'id'>) => void;
   onUpdateUser: (id: string, user: Partial<Employee>) => void;
   onDeleteUser: (id: string) => void;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ employees, onAddUser, onUpdateUser, onDeleteUser }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ employees, currentUserRole, onAddUser, onUpdateUser, onDeleteUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
@@ -22,11 +23,22 @@ const UserManagement: React.FC<UserManagementProps> = ({ employees, onAddUser, o
     role: 'employee',
     position: '',
     department: '',
-    branch: 'office', // Default branch
+    branch: 'office', 
     joinDate: new Date().toISOString().split('T')[0]
   });
 
+  // Filter Logic: Office Manager sees only Office employees
+  const filteredEmployees = useMemo(() => {
+      if (currentUserRole === 'office_manager') {
+          return employees.filter(e => e.branch === 'office');
+      }
+      return employees;
+  }, [employees, currentUserRole]);
+
   const resetForm = () => {
+      // Default to office if office_manager
+      const defaultBranch = currentUserRole === 'office_manager' ? 'office' : 'office';
+      
       setFormData({ 
         name: '', 
         email: '', 
@@ -34,7 +46,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ employees, onAddUser, o
         role: 'employee', 
         position: '', 
         department: '', 
-        branch: 'office',
+        branch: defaultBranch,
         joinDate: new Date().toISOString().split('T')[0] 
       });
       setEditingId(null);
@@ -130,7 +142,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ employees, onAddUser, o
       <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
         <div>
            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">إدارة المستخدمين والموظفين</h2>
-           <p className="text-slate-500 dark:text-slate-400">إضافة وتعديل وحذف المستخدمين وتحديد الصلاحيات</p>
+           <p className="text-slate-500 dark:text-slate-400">
+               {currentUserRole === 'office_manager' 
+                ? 'إدارة موظفين المكتب' 
+                : 'إضافة وتعديل وحذف المستخدمين وتحديد الصلاحيات'}
+           </p>
         </div>
         <button 
            onClick={handleOpenAdd}
@@ -153,7 +169,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ employees, onAddUser, o
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-            {employees.map(emp => (
+            {filteredEmployees.map(emp => (
               <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                 <td className="p-4 flex items-center gap-3">
                   <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full" />
@@ -278,21 +294,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ employees, onAddUser, o
                     >
                       <option value="employee">موظف</option>
                       <option value="accountant">محاسب</option>
-                      <option value="manager">مدير</option>
-                      <option value="office_manager">مدير مكتب (خاص)</option>
-                      <option value="general_manager">مدير عام</option>
-                      <option value="owner">صاحب شركة</option>
+                      {currentUserRole !== 'office_manager' && (
+                          <>
+                            <option value="manager">مدير</option>
+                            <option value="office_manager">مدير مكتب (خاص)</option>
+                            <option value="general_manager">مدير عام</option>
+                            <option value="owner">صاحب شركة</option>
+                          </>
+                      )}
                     </select>
                  </div>
                  <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الفرع الرئيسي</label>
                     <select 
                       value={formData.branch}
+                      disabled={currentUserRole === 'office_manager'} // Lock branch for office manager
                       onChange={e => setFormData({...formData, branch: e.target.value as 'office' | 'factory'})}
-                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:bg-slate-700 dark:border-slate-600 dark:text-white ${currentUserRole === 'office_manager' ? 'opacity-70 bg-slate-100 dark:bg-slate-800' : ''}`}
                     >
                       <option value="office">المكتب الرئيسي</option>
-                      <option value="factory">المصنع</option>
+                      {currentUserRole !== 'office_manager' && <option value="factory">المصنع</option>}
                     </select>
                  </div>
               </div>
