@@ -96,7 +96,16 @@ export const downloadAllData = async () => {
 
         if (empRes.error) return { success: false, message: empRes.error.message };
         
-        // MAPPING: Convert DB columns (checkout_date) to App Types (checkOutDate)
+        // 1. MAPPING EMPLOYEES: Map database columns (snake_case) to App Types (camelCase)
+        // This fixes the issue where salary disappears after refresh
+        const employees = (empRes.data || []).map((e: any) => ({
+            ...e,
+            basicSalary: e.basic_salary,        // Map basic_salary -> basicSalary
+            employmentType: e.employment_type,  // Map employment_type -> employmentType
+            branch: e.branch || 'office'        // Default branch
+        })) as Employee[];
+
+        // 2. MAPPING RECORDS: Convert DB columns (checkout_date) to App Types (checkOutDate)
         const records = (recRes.data || []).map((r: any) => ({
             ...r,
             checkOutDate: r.checkout_date || r.checkOutDate || r.date
@@ -104,7 +113,7 @@ export const downloadAllData = async () => {
 
         return {
             success: true,
-            employees: empRes.data as Employee[],
+            employees: employees,
             records: records,
             config: confRes.data?.config as AppConfig | null,
             logs: logRes.data as ActivityLog[] | [],
