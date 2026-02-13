@@ -97,12 +97,12 @@ export const downloadAllData = async () => {
         if (empRes.error) return { success: false, message: empRes.error.message };
         
         // 1. MAPPING EMPLOYEES: Map database columns (snake_case) to App Types (camelCase)
-        // This fixes the issue where salary disappears after refresh
+        // Checks both snake_case and camelCase to be robust against different DB states
         const employees = (empRes.data || []).map((e: any) => ({
             ...e,
-            basicSalary: e.basic_salary,        // Map basic_salary -> basicSalary
-            employmentType: e.employment_type,  // Map employment_type -> employmentType
-            branch: e.branch || 'office'        // Default branch
+            basicSalary: e.basic_salary ?? e.basicSalary ?? 0,        
+            employmentType: e.employment_type ?? e.employmentType ?? 'office',  
+            branch: e.branch || 'office'       
         })) as Employee[];
 
         // 2. MAPPING RECORDS: Convert DB columns (checkout_date) to App Types (checkOutDate)
@@ -134,6 +134,7 @@ export const downloadAllData = async () => {
 export const upsertSingleEmployee = async (employee: Employee) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false };
+    
     const { error } = await supabase.from('employees').upsert({
         id: employee.id,
         name: employee.name,
@@ -149,6 +150,7 @@ export const upsertSingleEmployee = async (employee: Employee) => {
         employment_type: employee.employmentType || 'office',
         created_at: new Date().toISOString()
     }, { onConflict: 'id' });
+    
     return { success: !error, error };
 };
 

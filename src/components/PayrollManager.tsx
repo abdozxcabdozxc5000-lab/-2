@@ -159,13 +159,19 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     const saveEmployeeSetup = async (id: string) => {
         const emp = employees.find(e => e.id === id);
         if (emp) {
+            // Ensure values are safe
+            const safeBasic = isNaN(tempSalary.basic) ? 0 : tempSalary.basic;
+            const safeType = tempSalary.type || 'office';
+
             await upsertSingleEmployee({ 
                 ...emp, 
-                basicSalary: tempSalary.basic,
-                employmentType: tempSalary.type 
+                basicSalary: safeBasic,
+                employmentType: safeType 
             });
+            
             setEditingEmp(null);
-            onUpdateData();
+            // Trigger data refresh after save is complete
+            setTimeout(() => onUpdateData(), 500); 
         }
     };
 
@@ -312,11 +318,24 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                     <td className="p-4 text-center">
                                         {editingEmp === emp.id ? (
                                             <div className="flex gap-2 justify-center">
-                                                <button onClick={() => saveEmployeeSetup(emp.id)} className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600"><CheckCircle size={16} /></button>
-                                                <button onClick={() => setEditingEmp(null)} className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><AlertCircle size={16} /></button>
+                                                <button 
+                                                    type="button" // Important: Prevent form submission
+                                                    onClick={() => saveEmployeeSetup(emp.id)} 
+                                                    className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600 shadow-lg active:scale-95 transition-all"
+                                                >
+                                                    <CheckCircle size={16} />
+                                                </button>
+                                                <button 
+                                                    type="button" // Important: Prevent form submission
+                                                    onClick={() => setEditingEmp(null)} 
+                                                    className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300 transition-all"
+                                                >
+                                                    <AlertCircle size={16} />
+                                                </button>
                                             </div>
                                         ) : (
                                             <button 
+                                                type="button"
                                                 onClick={() => { setEditingEmp(emp.id); setTempSalary({ basic: emp.basicSalary || 0, type: emp.employmentType || 'office' }) }}
                                                 className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors"
                                             >
