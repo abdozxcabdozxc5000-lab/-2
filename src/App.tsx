@@ -31,10 +31,10 @@ import { calculateDistance } from './utils';
 import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
-  const [currentSystem, setCurrentSystem] = useState<'portal' | 'attendance' | 'payroll'>('portal'); // New State for System Switching
+  const [currentSystem, setCurrentSystem] = useState<'portal' | 'attendance' | 'payroll'>('portal'); 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('mowazeb_theme') === 'dark');
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'info' | 'success' | 'error'}>>([]);
@@ -90,7 +90,7 @@ function App() {
 
   useEffect(() => {
       if (!currentUser || !config) return;
-      // Proximity Logic remains same...
+      
       const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
       const branchSettings = config[branchName];
       if (!branchSettings?.locationEnabled) return;
@@ -145,10 +145,9 @@ function App() {
       return newConfig;
   };
 
-  // UPDATED: Added 'silent' parameter to prevent full-screen loading on small updates
   const loadDataFromCloud = useCallback(async (silent = false) => {
       if (!silent) setIsLoading(true);
-      if (silent) setIsSyncing(true); // Show small sync indicator instead
+      if (silent) setIsSyncing(true);
 
       setCloudError(null);
       initSupabase();
@@ -171,17 +170,21 @@ function App() {
               setPayrolls(data.payrolls || []);
               setConfig(processLoadedConfig(data.config));
 
-              const savedSessionId = localStorage.getItem('mowazeb_session_id');
-              if (savedSessionId && !currentUser) {
-                  const foundUser = fetchedEmployees.find(e => e.id === savedSessionId);
-                  if (foundUser) {
-                      setCurrentUser(foundUser);
-                      const isTopManagement = foundUser.role === 'general_manager' || foundUser.role === 'owner';
-                      // If top management, go to portal first
-                      if (isTopManagement) setCurrentSystem('portal');
-                      else {
-                          setCurrentSystem('attendance');
-                          setActiveTab('biometric');
+              // Only attempt session restore on full load, not silent updates
+              if (!silent) {
+                  const savedSessionId = localStorage.getItem('mowazeb_session_id');
+                  // We check !currentUser inside the callback because of stale closure, 
+                  // but guarding with !silent ensures we don't override active state during an update.
+                  if (savedSessionId) {
+                      const foundUser = fetchedEmployees.find(e => e.id === savedSessionId);
+                      if (foundUser) {
+                          setCurrentUser(foundUser);
+                          const isTopManagement = foundUser.role === 'general_manager' || foundUser.role === 'owner';
+                          if (isTopManagement) setCurrentSystem('portal');
+                          else {
+                              setCurrentSystem('attendance');
+                              setActiveTab('biometric');
+                          }
                       }
                   }
               }
@@ -196,18 +199,17 @@ function App() {
       }
       if (!silent) setIsLoading(false);
       if (silent) setIsSyncing(false);
-  }, []); // currentUser removed from dependencies to avoid loop
+  }, []); 
 
   useEffect(() => {
       loadDataFromCloud();
       const sbConfig = getSupabaseConfig();
       if (sbConfig.isConnected) {
           subscribeToRealtime(() => {
-               // Use silent mode for realtime updates
                loadDataFromCloud(true);
           });
       }
-  }, []); // Only run on mount
+  }, []); 
 
   const handleLogin = (user: Employee) => {
       setCurrentUser(user);
@@ -332,8 +334,6 @@ function App() {
       addLog('DELETE', `User: ${user?.name}`, 'حذف موظف من النظام');
   };
 
-  // --- Rendering Logic ---
-
   if (isLoading) {
       return (
           <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060B18] text-white relative overflow-hidden font-sans" dir="rtl">
@@ -360,8 +360,6 @@ function App() {
   
   if (!config) return null;
 
-  // --- System Switching Logic ---
-  
   if (currentSystem === 'portal') {
       return <SystemPortal 
                 userName={currentUser.name} 
@@ -379,14 +377,13 @@ function App() {
                   loans={loans}
                   payrolls={payrolls}
                   config={config}
-                  onUpdateData={() => loadDataFromCloud(true)} // PASS TRUE FOR SILENT UPDATE
+                  onUpdateData={() => loadDataFromCloud(true)}
                   onExit={() => setCurrentSystem('portal')}
               />
           </div>
       );
   }
 
-  // Fallback to Attendance System Layout
   return (
     <Layout 
         activeTab={activeTab} onTabChange={setActiveTab} 
