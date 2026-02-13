@@ -205,7 +205,11 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <button type="button" onClick={onExit} className="p-3 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-colors">
+                    <button 
+                        type="button" 
+                        onClick={(e) => { e.preventDefault(); onExit(); }}
+                        className="p-3 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-colors"
+                    >
                         <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
                     </button>
                     <div>
@@ -226,7 +230,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                         <button
                             key={tab.id}
                             type="button"
-                            onClick={() => setActiveTab(tab.id as any)}
+                            onClick={(e) => { e.preventDefault(); setActiveTab(tab.id as any); }}
                             className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
                                 activeTab === tab.id 
                                 ? 'bg-white dark:bg-slate-700 shadow-md text-emerald-600 dark:text-emerald-400' 
@@ -307,6 +311,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                 onKeyDown={e => {
                                                     if(e.key === 'Enter') {
                                                         e.preventDefault();
+                                                        e.stopPropagation();
                                                         saveEmployeeSetup(emp.id);
                                                     }
                                                 }}
@@ -321,14 +326,14 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <div className="flex gap-2 justify-center">
                                                 <button 
                                                     type="button" 
-                                                    onClick={() => saveEmployeeSetup(emp.id)} 
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); saveEmployeeSetup(emp.id); }} 
                                                     className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600 shadow-lg active:scale-95 transition-all"
                                                 >
                                                     <CheckCircle size={16} />
                                                 </button>
                                                 <button 
                                                     type="button" 
-                                                    onClick={() => setEditingEmp(null)} 
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingEmp(null); }} 
                                                     className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300 transition-all"
                                                 >
                                                     <AlertCircle size={16} />
@@ -337,7 +342,12 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                         ) : (
                                             <button 
                                                 type="button"
-                                                onClick={() => { setEditingEmp(emp.id); setTempSalary({ basic: emp.basicSalary || 0, type: emp.employmentType || 'office' }) }}
+                                                onClick={(e) => { 
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setEditingEmp(emp.id); 
+                                                    setTempSalary({ basic: emp.basicSalary || 0, type: emp.employmentType || 'office' });
+                                                }}
                                                 className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors"
                                             >
                                                 تعديل
@@ -388,7 +398,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             </div>
                             <button 
                                 type="button"
-                                onClick={handleAddLoan}
+                                onClick={(e) => { e.preventDefault(); handleAddLoan(); }}
                                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
                             >
                                 اعتماد السلفة
@@ -458,7 +468,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             </div>
                             <button 
                                 type="button"
-                                onClick={calculatePayroll}
+                                onClick={(e) => { e.preventDefault(); calculatePayroll(); }}
                                 className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all"
                             >
                                 <Calculator size={18} className="inline ml-2" /> إعداد الكشف
@@ -467,7 +477,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                         {generatedData.length > 0 && (
                             <button 
                                 type="button"
-                                onClick={handleSavePayroll}
+                                onClick={(e) => { e.preventDefault(); handleSavePayroll(); }}
                                 disabled={processing}
                                 className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all flex items-center gap-2"
                             >
