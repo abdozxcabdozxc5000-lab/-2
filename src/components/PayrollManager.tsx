@@ -63,21 +63,18 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 if (r.status === 'absent_penalty') unexcusedAbsences++;
             });
 
-            // 3. Overtime Calc (Factory Only usually, but logic allows general)
-            // Rate assumption: Basic / 30 days / 8 hours
+            // 3. Overtime Calc
             const hourlyRate = basic > 0 ? (basic / 30 / 8) : 0;
             let overtimeValue = 0;
             
             if (type === 'factory') {
-                // Factory: Overtime is calculated. Maybe 1.5x rate? Let's assume 1.5x for simplicity or standard rate
                 const overtimeHours = totalOvertimeMinutes / 60;
                 overtimeValue = Math.round(overtimeHours * hourlyRate * 1.5); // 1.5x multiplier
             }
 
             // 4. Deductions
-            // Penalty value from config or day rate
             const dayRate = basic / 30;
-            const penaltyValue = Math.round(unexcusedAbsences * dayRate * (config.penaltyValue || 1)); // Penalty multiplier
+            const penaltyValue = Math.round(unexcusedAbsences * dayRate * (config.penaltyValue || 1)); 
 
             // 5. Loans
             const activeLoan = loans.find(l => l.employeeId === emp.id && l.status === 'active');
@@ -100,8 +97,8 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 commissions: 0, // Manual input later
                 bonuses: 0,
                 absentDays: unexcusedAbsences,
-                absentValue: Math.round(unexcusedAbsences * dayRate), // Basic deduction for absence
-                penaltyValue: penaltyValue, // Extra penalty
+                absentValue: Math.round(unexcusedAbsences * dayRate),
+                penaltyValue: penaltyValue,
                 loanDeduction: loanDeduction,
                 insurance: 0,
                 netSalary: 0, // Calc at end
@@ -159,7 +156,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     const saveEmployeeSetup = async (id: string) => {
         const emp = employees.find(e => e.id === id);
         if (emp) {
-            // Ensure values are safe
             const safeBasic = isNaN(tempSalary.basic) ? 0 : tempSalary.basic;
             const safeType = tempSalary.type || 'office';
 
@@ -170,8 +166,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             });
             
             setEditingEmp(null);
-            // Trigger data refresh after save is complete
-            setTimeout(() => onUpdateData(), 500); 
+            setTimeout(() => onUpdateData(), 100); 
         }
     };
 
@@ -195,7 +190,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         onUpdateData();
     };
 
-    // --- RENDER HELPERS ---
     const getEmploymentLabel = (type?: EmploymentType) => {
         switch(type) {
             case 'factory': return 'موظف مصنع';
@@ -211,7 +205,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <button onClick={onExit} className="p-3 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-colors">
+                    <button type="button" onClick={onExit} className="p-3 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-colors">
                         <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
                     </button>
                     <div>
@@ -231,6 +225,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                     ].map(tab => (
                         <button
                             key={tab.id}
+                            type="button"
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
                                 activeTab === tab.id 
@@ -309,6 +304,12 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                 type="number" 
                                                 value={tempSalary.basic}
                                                 onChange={e => setTempSalary({...tempSalary, basic: parseFloat(e.target.value)})}
+                                                onKeyDown={e => {
+                                                    if(e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        saveEmployeeSetup(emp.id);
+                                                    }
+                                                }}
                                                 className="p-2 rounded-lg border w-32 outline-none focus:border-emerald-500 dark:bg-slate-900 dark:border-slate-600 dark:text-white"
                                             />
                                         ) : (
@@ -319,14 +320,14 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                         {editingEmp === emp.id ? (
                                             <div className="flex gap-2 justify-center">
                                                 <button 
-                                                    type="button" // Important: Prevent form submission
+                                                    type="button" 
                                                     onClick={() => saveEmployeeSetup(emp.id)} 
                                                     className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600 shadow-lg active:scale-95 transition-all"
                                                 >
                                                     <CheckCircle size={16} />
                                                 </button>
                                                 <button 
-                                                    type="button" // Important: Prevent form submission
+                                                    type="button" 
                                                     onClick={() => setEditingEmp(null)} 
                                                     className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300 transition-all"
                                                 >
@@ -386,6 +387,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 />
                             </div>
                             <button 
+                                type="button"
                                 onClick={handleAddLoan}
                                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
                             >
@@ -455,6 +457,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </select>
                             </div>
                             <button 
+                                type="button"
                                 onClick={calculatePayroll}
                                 className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all"
                             >
@@ -463,6 +466,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                         </div>
                         {generatedData.length > 0 && (
                             <button 
+                                type="button"
                                 onClick={handleSavePayroll}
                                 disabled={processing}
                                 className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all flex items-center gap-2"
