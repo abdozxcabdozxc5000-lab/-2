@@ -62,7 +62,7 @@ const checkIsHoliday = (dateStr: string, config: AppConfig): boolean => {
     });
 };
 
-// --- UPDATED STATS CALCULATION TO SUPPORT BRANCHES ---
+// --- UPDATED STATS CALCULATION TO SUPPORT BRANCHES & MULTI-DAY SHIFTS ---
 export const calculateDailyStats = (dateStr: string, config: AppConfig, record?: AttendanceRecord, employee?: Employee): DailyStats => {
   const dateObj = new Date(dateStr);
   const dayOfWeek = dateObj.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
@@ -125,8 +125,25 @@ export const calculateDailyStats = (dateStr: string, config: AppConfig, record?:
   const workStartMin = timeToMinutes(branchSettings.workStartTime);
   const workEndMin = timeToMinutes(branchSettings.workEndTime);
 
-  if (checkOutMin < checkInMin) {
-      checkOutMin += 1440;
+  // --- CRITICAL FIX: Handle Multi-Day Shifts ---
+  // If checkOutDate exists and is NOT the same as checkInDate
+  if (record.checkOutDate && record.checkOutDate !== record.date) {
+      const d1 = new Date(record.date);
+      const d2 = new Date(record.checkOutDate);
+      
+      // Calculate difference in milliseconds then convert to days
+      const diffTime = d2.getTime() - d1.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+      
+      if (diffDays > 0) {
+          // Add 24 hours (1440 mins) for each day difference
+          checkOutMin += (diffDays * 1440);
+      }
+  } else {
+      // Fallback Legacy Logic: If checkOut < checkIn (e.g. In 20:00, Out 02:00), assume next day
+      if (checkOutMin < checkInMin) {
+          checkOutMin += 1440;
+      }
   }
 
   let delay = 0;
@@ -159,13 +176,13 @@ export const calculateDailyStats = (dateStr: string, config: AppConfig, record?:
             delay = actualDelay;
         }
     } else {
-        // Early Arrival
+        // Early Arrival (Count as overtime or just ignored depending on policy, currently adding to raw)
         rawOvertime += (workStartMin - checkInMin);
     }
 
     // 2. Check Exit
     if (checkOutMin > workEndMin) {
-        // Late Departure
+        // Late Departure (Overtime)
         rawOvertime += (checkOutMin - workEndMin);
     } else if (checkOutMin < workEndMin) {
         // Early Departure
