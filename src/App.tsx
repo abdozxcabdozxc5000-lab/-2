@@ -30,7 +30,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
 // Loud notification sound (Digital Alarm Beep)
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -50,13 +50,8 @@ function App() {
   const [isPermissionError, setIsPermissionError] = useState(false);
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
 
-  // PWA Install State
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-
-  // Geo-Notification State - Using Session Storage to strict "ONCE PER SESSION" policy
-  const [hasNotifiedProximity, setHasNotifiedProximity] = useState(() => {
-      return typeof window !== 'undefined' && sessionStorage.getItem('mowazeb_prox_notified') === 'true';
-  });
+  // Geo-Notification State
+  const [hasNotifiedProximity, setHasNotifiedProximity] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const notify = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
@@ -86,103 +81,35 @@ function App() {
     localStorage.setItem('mowazeb_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Initialize Audio & PWA Prompt
+  // Initialize Audio
   useEffect(() => {
       audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
-      
-      // Request permission immediately for Notifications
-      if ('Notification' in window) {
-          Notification.requestPermission();
-      }
-
-      // Capture PWA Install Prompt
-      window.addEventListener('beforeinstallprompt', (e) => {
-          e.preventDefault();
-          setInstallPrompt(e);
-      });
   }, []);
 
-  const handleInstallApp = async () => {
-      if (!installPrompt) return;
-      installPrompt.prompt();
-      const { outcome } = await installPrompt.userChoice;
-      if (outcome === 'accepted') {
-          setInstallPrompt(null);
-      }
-  };
-
-  // --- SMART SHIFT NOTIFICATION SCHEDULER ---
+  // --- FAST PROXIMITY NOTIFICATION LOGIC ---
   useEffect(() => {
       if (!currentUser || !config) return;
 
-      const checkShiftTime = () => {
-          const now = new Date();
-          const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
-          const settings = config[branchName];
-          
-          if (!settings?.workStartTime) return;
-
-          const [startHour, startMinute] = settings.workStartTime.split(':').map(Number);
-          const shiftStart = new Date();
-          shiftStart.setHours(startHour, startMinute, 0, 0);
-
-          const diffMs = shiftStart.getTime() - now.getTime();
-          const diffMinutes = Math.floor(diffMs / 60000);
-
-          // Notify 15 minutes before shift OR exactly at shift start
-          if (diffMinutes === 15 || diffMinutes === 0) {
-              
-              const todayStr = now.toISOString().split('T')[0];
-              const recordId = `${currentUser.id}-${todayStr}`;
-              const hasCheckedIn = attendanceRecords.some(r => r.id === recordId && r.checkIn);
-
-              if (!hasCheckedIn) {
-                  const msg = diffMinutes === 15 
-                      ? `⏳ تنبيه: باقي 15 دقيقة على موعد حضورك في ${branchName === 'factory' ? 'المصنع' : 'المكتب'}!` 
-                      : `🚨 حان الآن موعد الحضور! يرجى تسجيل الدخول فوراً.`;
-
-                  if (Notification.permission === 'granted') {
-                      new Notification("نظام مواظب PRO", {
-                          body: msg,
-                          icon: "https://cdn-icons-png.flaticon.com/512/9320/9320288.png",
-                          requireInteraction: true
-                      });
-                  }
-
-                  // Optional: Disable in-app notification here too if needed, but keeping for awareness
-                  // notify(msg, 'info'); 
-                  if (audioRef.current) audioRef.current.play().catch(() => {});
-              }
-          }
-      };
-
-      const interval = setInterval(checkShiftTime, 60000);
-      checkShiftTime(); // Initial
-
-      return () => clearInterval(interval);
-  }, [currentUser, config, attendanceRecords]);
-
-  // --- FAST PROXIMITY NOTIFICATION LOGIC (ONCE PER SESSION) ---
-  useEffect(() => {
-      if (!currentUser || !config) return;
-
+      // 1. Identify Branch & Settings
       const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
       const branchSettings = config[branchName];
 
+      // 2. Check if Location Tracking is Enabled
       if (!branchSettings?.locationEnabled) return;
 
+      // 3. Check if ALREADY checked in for today
       const today = new Date().toISOString().split('T')[0];
       const recordId = `${currentUser.id}-${today}`;
       const record = attendanceRecords.find(r => r.id === recordId);
       
-      // If already checked in, stop tracking/notifying
       if (record?.checkIn) {
+          if (hasNotifiedProximity) setHasNotifiedProximity(false); 
           return;
       }
 
-      // If already notified in this session, stop
       if (hasNotifiedProximity) return;
 
+      // 4. Start Watching Location with HIGH SPEED Settings
       if ('geolocation' in navigator) {
           const watchId = navigator.geolocation.watchPosition(
               (position) => {
@@ -196,20 +123,13 @@ function App() {
                   
                   // Trigger if within radius + 50m buffer
                   if (distance <= (allowedRadius + 50)) {
+                      // PLAY SOUND
                       if (audioRef.current) {
                           audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
                       }
                       
-                      const msg = `🔔 وصول مؤكد: أنت في نطاق ${branchName === 'factory' ? 'المصنع' : 'المكتب'}. سجل حضورك الآن.`;
-                      // notify(msg, 'success'); // DISABLED IN-APP NOTIFICATION TO PREVENT UI BLOCKING
-                      
-                      if (Notification.permission === 'granted') {
-                          new Notification("أنت في الموقع!", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/9320/9320288.png" });
-                      }
-
-                      // Set persistence to avoid spam
+                      notify(`🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`, 'info');
                       setHasNotifiedProximity(true);
-                      sessionStorage.setItem('mowazeb_prox_notified', 'true');
                   }
               },
               (err) => {
@@ -217,8 +137,8 @@ function App() {
               },
               { 
                   enableHighAccuracy: true, 
-                  maximumAge: 60000, 
-                  timeout: 20000     
+                  maximumAge: 60000, // CRITICAL: Accept cached position from last 60s for INSTANT check
+                  timeout: 20000     // Long timeout to avoid error spam
               }
           );
 
@@ -318,10 +238,6 @@ function App() {
       const isTopManagement = user.role === 'general_manager' || user.role === 'owner';
       setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
 
-      if (Notification.permission === 'default') {
-          Notification.requestPermission();
-      }
-
       setTimeout(() => {
           addLog('LOGIN', 'System', 'قام المستخدم بتسجيل الدخول');
       }, 500);
@@ -332,9 +248,6 @@ function App() {
       if (currentUser) addLog('LOGOUT', 'System', 'قام المستخدم بتسجيل الخروج');
       localStorage.removeItem('mowazeb_session_id');
       setCurrentUser(null);
-      // Reset session notification state so they can be notified next time they login or arrive
-      sessionStorage.removeItem('mowazeb_prox_notified');
-      setHasNotifiedProximity(false);
   };
 
   const handleUpdateRecord = async (newRecord: AttendanceRecord) => {
@@ -511,7 +424,6 @@ function App() {
         onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)}
         isSyncing={isSyncing} cloudError={cloudError}
         notifications={notifications} removeNotification={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
-        installPrompt={installPrompt} onInstall={handleInstallApp}
     >
       <AnimatePresence mode="wait">
         <PageTransition key={activeTab}>
@@ -519,9 +431,9 @@ function App() {
             {activeTab === 'employees' && <EmployeeManager employees={employees} attendanceRecords={attendanceRecords} config={config} userRole={userRole} onUpdateRecord={handleUpdateRecord} onDeleteRecord={handleDeleteRecord} />}
             {activeTab === 'biometric' && <BiometricSimulator employees={employees} onDevicePunch={handleDevicePunch} currentUser={currentUser} config={config} />}
             {activeTab === 'reports' && <Reports employees={employees} attendanceRecords={attendanceRecords} config={config} currentUserRole={userRole} currentEmployeeId={currentUser.id} />}
-            {activeTab === 'users' && <UserManagement employees={employees} currentUserRole={userRole} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
+            {activeTab === 'users' && <UserManagement employees={employees} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
             {activeTab === 'logs' && <ActivityLogs logs={logs} />}
-            {activeTab === 'settings' && <Settings config={config} onConfigChange={handleConfigChange} userRole={userRole} onRoleChange={() => {}} onResetData={() => {}} darkMode={darkMode} notify={notify} />}
+            {activeTab === 'settings' && <Settings config={config} onConfigChange={handleConfigChange} userRole={userRole} onRoleChange={() => {}} onResetData={() => {}} />}
         </PageTransition>
       </AnimatePresence>
     </Layout>

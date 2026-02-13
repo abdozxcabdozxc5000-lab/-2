@@ -12,7 +12,6 @@ let supabase: SupabaseClient | null = null;
 let realtimeChannel: RealtimeChannel | null = null;
 
 export const getSupabaseConfig = (): SupabaseConfig => {
-    // 1. Priority: Environment Variables (Vercel / .env)
     const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
     const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
 
@@ -24,7 +23,6 @@ export const getSupabaseConfig = (): SupabaseConfig => {
         };
     }
 
-    // 2. Priority: Local Storage (User defined settings in app)
     try {
         const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_SUPABASE) : null;
         if (stored) {
@@ -39,7 +37,6 @@ export const getSupabaseConfig = (): SupabaseConfig => {
         console.error("Error reading supabase config", e);
     }
 
-    // 3. Priority: Fallback Hardcoded
     return {
         projectUrl: FALLBACK_PROJECT_URL,
         apiKey: FALLBACK_API_KEY,
@@ -97,10 +94,17 @@ export const downloadAllData = async () => {
         if (empRes.error) return { success: false, message: empRes.error.message, code: empRes.error.code };
         if (recRes.error) return { success: false, message: recRes.error.message, code: recRes.error.code };
         
+        // MAPPING: Convert DB columns (checkout_date) to App Types (checkOutDate)
+        const records = (recRes.data || []).map((r: any) => ({
+            ...r,
+            // Priority: checkout_date (new DB) -> checkOutDate (old DB possibility) -> date (default)
+            checkOutDate: r.checkout_date || r.checkOutDate || r.date
+        })) as AttendanceRecord[];
+
         return {
             success: true,
             employees: empRes.data as Employee[],
-            records: recRes.data as AttendanceRecord[],
+            records: records,
             config: confRes.data?.config as AppConfig | null,
             logs: logRes.data as ActivityLog[] | [],
             code: null
@@ -126,7 +130,7 @@ export const upsertSingleEmployee = async (employee: Employee) => {
         role: employee.role,
         position: employee.position,
         department: employee.department,
-        branch: employee.branch || 'office', // Default to office if not set
+        branch: employee.branch || 'office',
         joinDate: employee.joinDate,
         avatar: employee.avatar,
         created_at: new Date().toISOString()
@@ -143,21 +147,34 @@ export const deleteSingleEmployee = async (id: string) => {
 
 export const upsertSingleRecord = async (record: AttendanceRecord) => {
     if (!supabase) initSupabase();
-    if (!supabase) return { success: false };
-    const { error } = await supabase.from('attendance_records').upsert({
+    if (!supabase) return { success: false, error: { message: 'Supabase not initialized' } };
+    
+    // MAPPING: Convert App Types (checkOutDate) to DB columns (checkout_date)
+    // Ensures snake_case for DB persistence
+    const payload = {
         id: record.id,
-        employeeId: record.employeeId,
+        "employeeId": record.employeeId,
         date: record.date,
-        checkIn: record.checkIn || null,
-        checkOut: record.checkOut || null,
+        "checkIn": record.checkIn || null,
+        "checkOut": record.checkOut || null,
+        "checkout_date": record.checkOutDate || record.date, // Correct DB Column Name
         status: record.status,
         note: record.note || null,
         source: record.source || 'manual',
-        earlyDeparturePermission: record.earlyDeparturePermission || false,
+        "earlyDeparturePermission": record.earlyDeparturePermission || false,
         photo: record.photo || null,
         location: record.location || null,
         created_at: new Date().toISOString()
-    }, { onConflict: 'id' });
+    };
+
+    console.log("Saving Record Payload:", payload);
+
+    const { error } = await supabase.from('attendance_records').upsert(payload, { onConflict: 'id' });
+    
+    if (error) {
+        console.error("Supabase Save Error:", error);
+    }
+
     return { success: !error, error };
 };
 
@@ -183,7 +200,6 @@ export const upsertSingleLog = async (log: ActivityLog) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false };
     
-    // Explicitly mapping fields to ensure they match the Case-Sensitive columns in DB if created with quotes
     const { error } = await supabase.from('activity_logs').upsert({
         id: log.id,
         "actorName": log.actorName,
@@ -194,10 +210,6 @@ export const upsertSingleLog = async (log: ActivityLog) => {
         timestamp: log.timestamp,
         created_at: new Date().toISOString()
     }, { onConflict: 'id' });
-
-    if (error) {
-        console.error("FAILED TO SAVE LOG:", error.message, error.details, log);
-    }
 
     return { success: !error, error };
 };
@@ -238,6 +250,7 @@ export const uploadAllData = async (employees: Employee[], records: AttendanceRe
                     date: r.date,
                     checkIn: r.checkIn || null,
                     checkOut: r.checkOut || null,
+                    checkout_date: r.checkOutDate || r.date, // Map checkOutDate to checkout_date for bulk upload
                     status: r.status,
                     note: r.note || null,
                     source: r.source || 'manual',

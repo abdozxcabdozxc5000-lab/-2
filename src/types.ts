@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'general_manager' | 'owner' | 'manager' | 'office_manager' | 'accountant' | 'employee';
 
 export interface Employee {
@@ -21,9 +22,10 @@ export type RecordSource = 'manual' | 'device' | 'app';
 export interface AttendanceRecord {
   id: string;
   employeeId: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD (This is Check-In Date)
   checkIn?: string; // HH:mm format
   checkOut?: string; // HH:mm format
+  checkOutDate?: string; // YYYY-MM-DD (Explicit Departure Date)
   status: AttendanceStatus;
   note?: string;
   source?: RecordSource;

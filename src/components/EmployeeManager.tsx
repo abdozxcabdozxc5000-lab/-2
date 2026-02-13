@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Employee, AttendanceRecord, AppConfig, UserRole } from '../types';
 import SmartCalendar from './SmartCalendar';
-import { ArrowRight, Search, Trash2, Calendar, X, AlertTriangle, FileText, Users, Building, Factory } from 'lucide-react';
+import { ArrowRight, Search, Trash2, Calendar, X, AlertTriangle, FileText, Users, Building, Factory, Clock } from 'lucide-react';
 import { Permissions, getMonthDates } from '../utils';
 
 const MONTHS = [
@@ -34,30 +34,29 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
   const [lastFocusedDate, setLastFocusedDate] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // State
   const [editForm, setEditForm] = useState<{ 
       id?: string; 
       checkIn: string; 
       checkOut: string; 
+      checkOutDate: string; // Ensure this exists
       status: string; 
       earlyPermission: boolean;
-      note: string; // Added note field
+      note: string;
   }>({
-      checkIn: '', checkOut: '', status: 'present', earlyPermission: false, note: ''
+      checkIn: '', checkOut: '', checkOutDate: '', status: 'present', earlyPermission: false, note: ''
   });
 
-  // Enforce branch filter for Office Manager
   useEffect(() => {
     if (userRole === 'office_manager') {
         setSelectedBranch('office');
     }
   }, [userRole]);
 
-  // Refs for focusing inputs
   const checkInRef = useRef<HTMLInputElement>(null);
   const checkOutRef = useRef<HTMLInputElement>(null);
-  const noteRef = useRef<HTMLTextAreaElement>(null); // Ref for note
+  const noteRef = useRef<HTMLTextAreaElement>(null); 
 
-  // Auto-focus on "Check In" when modal opens
   useEffect(() => {
       if (editingDate && checkInRef.current) {
           setTimeout(() => {
@@ -71,7 +70,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
     return employees.filter(e => {
         const matchesSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase());
         
-        // Strict filtering for Office Manager role
         if (userRole === 'office_manager') {
             return matchesSearch && e.branch === 'office';
         }
@@ -89,9 +87,11 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
           id: record?.id,
           checkIn: record?.checkIn || '',
           checkOut: record?.checkOut || '',
+          // Important: Default checkOutDate to current date if undefined
+          checkOutDate: record?.checkOutDate || date, 
           status: record?.status || 'present',
           earlyPermission: record?.earlyDeparturePermission || false,
-          note: record?.note || '' // Load existing note
+          note: record?.note || '' 
       });
   };
 
@@ -104,24 +104,24 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
           date: editingDate,
           checkIn: editForm.checkIn.trim() || undefined,
           checkOut: editForm.checkOut.trim() || undefined,
+          checkOutDate: editForm.checkOutDate || editingDate, // Ensure value is passed
           status: editForm.status as any,
           earlyDeparturePermission: editForm.earlyPermission,
-          note: editForm.note.trim() || undefined // Save note
+          note: editForm.note.trim() || undefined 
       };
 
       onUpdateRecord(newRecord);
       
-      // Calculate Next Date for auto-focus
       const dates = getMonthDates(selectedYear, selectedMonth);
       const currentIndex = dates.indexOf(editingDate);
       if (currentIndex !== -1 && currentIndex < dates.length - 1) {
           const nextDate = dates[currentIndex + 1];
           setLastFocusedDate(nextDate);
       } else {
-          setLastFocusedDate(editingDate); // Fallback to current if last day
+          setLastFocusedDate(editingDate);
       }
 
-      setEditingDate(null); // Close modal
+      setEditingDate(null);
   };
 
   const handleConfirmDelete = () => {
@@ -129,14 +129,11 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
           onDeleteRecord(editForm.id);
           setEditingDate(null);
           setShowDeleteConfirm(false);
-          // Focus back on the date
           setLastFocusedDate(editingDate);
       }
   };
 
-  // Handle Enter Key Navigation
   const handleInputKeyDown = (e: React.KeyboardEvent, field: 'checkIn' | 'checkOut' | 'note') => {
-      // Allow Shift+Enter for new line in notes
       if (field === 'note' && e.shiftKey && e.key === 'Enter') return;
 
       if (e.key === 'Enter') {
@@ -145,7 +142,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
               checkOutRef.current?.focus();
               checkOutRef.current?.select();
           } else if (field === 'checkOut') {
-              // Move to note instead of saving immediately
               noteRef.current?.focus();
               noteRef.current?.select();
           } else if (field === 'note') {
@@ -154,7 +150,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
       }
   };
 
-  // Determine label based on status
   const noteLabel = (editForm.status === 'leave' || editForm.status === 'absent' || editForm.status === 'absent_penalty') 
     ? 'سبب الإجازة / الغياب' 
     : 'ملاحظات إضافية';
@@ -206,10 +201,10 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
 
         {editingDate && canEdit && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-scale-in border border-slate-100 dark:border-slate-700">
+                {/* Added max-h-[90vh] and overflow-y-auto to fix visibility on small screens */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-scale-in border border-slate-100 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
                     
                     {!showDeleteConfirm ? (
-                        /* --- EDIT FORM VIEW --- */
                         <div className="animate-fade-in">
                             <div className="flex justify-between items-start mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
                                 <div>
@@ -230,26 +225,43 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
 
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5 mr-1">وقت الحضور</label>
+                                    <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                        <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                            <Clock size={10} /> وقت الحضور
+                                        </label>
                                         <input 
                                             ref={checkInRef}
                                             type="time" value={editForm.checkIn}
                                             onChange={e => setEditForm({...editForm, checkIn: e.target.value})}
                                             onKeyDown={e => handleInputKeyDown(e, 'checkIn')}
-                                            className="w-full p-3 border-2 border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none dir-ltr dark:bg-slate-900 dark:border-slate-700 dark:text-white font-mono text-lg transition-all"
+                                            className="w-full bg-transparent outline-none dir-ltr dark:text-white font-mono text-xl font-bold"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5 mr-1">وقت الانصراف</label>
+                                    <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                        <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                                            <Clock size={10} /> وقت الانصراف
+                                        </label>
                                         <input 
                                             ref={checkOutRef}
                                             type="time" value={editForm.checkOut}
                                             onChange={e => setEditForm({...editForm, checkOut: e.target.value})}
                                             onKeyDown={e => handleInputKeyDown(e, 'checkOut')}
-                                            className="w-full p-3 border-2 border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none dir-ltr dark:bg-slate-900 dark:border-slate-700 dark:text-white font-mono text-lg transition-all"
+                                            className="w-full bg-transparent outline-none dir-ltr dark:text-white font-mono text-xl font-bold"
                                         />
                                     </div>
+                                </div>
+
+                                {/* --- Check Out Date Field (EXPLICITLY ADDED HERE) --- */}
+                                <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                                    <label className="block text-[10px] font-black text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                                        <Calendar size={10} /> تاريخ الانصراف (هام للورديات الليلية)
+                                    </label>
+                                    <input 
+                                        type="date"
+                                        value={editForm.checkOutDate}
+                                        onChange={e => setEditForm({...editForm, checkOutDate: e.target.value})}
+                                        className="w-full bg-transparent outline-none dark:text-white font-bold text-sm"
+                                    />
                                 </div>
 
                                 <div>
@@ -268,7 +280,7 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
                                     <input 
                                         type="checkbox" id="earlyPerm"
                                         checked={editForm.earlyPermission}
@@ -300,7 +312,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
                             </div>
                         </div>
                     ) : (
-                        /* --- DELETE CONFIRMATION VIEW --- */
                         <div className="animate-scale-in py-4 text-center">
                             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600">
                                 <AlertTriangle size={32} />

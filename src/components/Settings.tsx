@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserRole, Holiday, BranchSettings } from '../types';
-import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, Crosshair } from 'lucide-react';
+import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { Permissions } from '../utils';
 import { DEFAULT_CONFIG } from '../constants';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap } from 'react-leaflet';
@@ -12,8 +12,6 @@ interface SettingsProps {
   userRole: UserRole;
   onRoleChange: (role: UserRole) => void;
   onResetData?: () => void;
-  darkMode?: boolean;
-  notify: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 // Component to handle map clicks
@@ -37,7 +35,7 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
   return null;
 };
 
-const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, darkMode, notify }) => {
+const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole }) => {
   const [localConfig, setLocalConfig] = useState<AppConfig>({
       ...DEFAULT_CONFIG,
       ...config,
@@ -115,16 +113,15 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
                       lng: position.coords.longitude
                   });
                   setIsLocating(false);
-                  notify("تم تحديث الموقع بنجاح بناءً على مكانك الحالي.", "success");
               },
               (error) => {
-                  notify("فشل في جلب الموقع. تأكد من تفعيل الـ GPS والسماح للمتصفح بالوصول للموقع.", "error");
+                  alert("فشل في جلب الموقع. تأكد من تفعيل الـ GPS والسماح للمتصفح بالوصول للموقع.");
                   setIsLocating(false);
               },
               { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
           );
       } else {
-          notify("المتصفح لا يدعم تحديد الموقع", "error");
+          alert("المتصفح لا يدعم تحديد الموقع");
           setIsLocating(false);
       }
   };
@@ -138,12 +135,11 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
         if (data && data.length > 0) {
             const { lat, lon } = data[0];
             updateBranchSettings(activeTab, { lat: parseFloat(lat), lng: parseFloat(lon) });
-            notify("تم العثور على الموقع وتحديث الإحداثيات.", "success");
         } else {
-            notify('لم يتم العثور على الموقع. حاول كتابة اسم المدينة أو المنطقة.', "error");
+            alert('لم يتم العثور على الموقع. حاول كتابة اسم المدينة أو المنطقة.');
         }
     } catch (e) {
-        notify('حدث خطأ أثناء البحث. تأكد من اتصالك بالإنترنت.', "error");
+        alert('حدث خطأ أثناء البحث. تأكد من اتصالك بالإنترنت.');
     } finally {
         setIsSearching(false);
     }
@@ -163,9 +159,9 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
           const lng = parseFloat(match[2]);
           updateBranchSettings(activeTab, { lat, lng });
           setGoogleMapsUrl(''); // Clear input on success
-          notify('تم استخراج الموقع وتحديث الإحداثيات بنجاح!', 'success');
+          alert('تم استخراج الموقع بنجاح!');
       } else {
-          notify('تعذر استخراج الإحداثيات. تأكد من نسخ رابط كامل من المتصفح.', 'error');
+          alert('تعذر استخراج الإحداثيات من الرابط. تأكد من نسخ رابط كامل من شريط العنوان في المتصفح بعد تحديد الموقع.');
       }
   };
 
@@ -191,13 +187,6 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
   const currentLat = localConfig[activeTab].lat || 30.0444; // Default to Cairo if 0
   const currentLng = localConfig[activeTab].lng || 31.2357;
   const currentRadius = localConfig[activeTab].radius || 100;
-
-  // Use CartoDB tiles for a much cleaner, professional look. Supports Dark Mode.
-  const tileLayerUrl = darkMode 
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
-    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-
-  const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
   return (
     <div className="space-y-8 pb-24 animate-fade-in">
@@ -351,7 +340,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
                          </div>
 
                          {/* Interactive Map */}
-                         <div className="relative w-full h-96 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-200 dark:border-slate-700 z-0 group">
+                         <div className="w-full h-72 rounded-2xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-700 relative z-0">
                              {typeof window !== 'undefined' && (
                                 <MapContainer 
                                     center={[currentLat, currentLng]} 
@@ -360,62 +349,45 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole, d
                                     scrollWheelZoom={true}
                                 >
                                     <TileLayer
-                                        attribution={attribution}
-                                        url={tileLayerUrl}
+                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     />
-                                    {/* Visual Circle for Radius - Styled as a Radar Zone */}
+                                    {/* Visual Circle for Radius */}
                                     <Circle 
                                         center={[currentLat, currentLng]}
-                                        pathOptions={{ 
-                                            fillColor: activeTab === 'office' ? '#3b82f6' : '#f59e0b', 
-                                            color: activeTab === 'office' ? '#2563eb' : '#d97706', 
-                                            weight: 2, 
-                                            dashArray: '10, 10', 
-                                            fillOpacity: 0.15 
-                                        }}
+                                        pathOptions={{ fillColor: activeTab === 'office' ? 'blue' : 'orange', color: activeTab === 'office' ? 'blue' : 'orange', fillOpacity: 0.2 }}
                                         radius={currentRadius}
                                     />
-                                    {/* Center Pulse Marker */}
+                                    {/* Center Point Marker */}
                                     <Circle 
                                         center={[currentLat, currentLng]}
-                                        pathOptions={{ 
-                                            fillColor: activeTab === 'office' ? '#2563eb' : '#d97706', 
-                                            color: '#fff', 
-                                            weight: 3, 
-                                            fillOpacity: 1 
-                                        }}
-                                        radius={5}
+                                        pathOptions={{ fillColor: 'red', color: 'white', weight: 2, fillOpacity: 1 }}
+                                        radius={8}
                                     />
-                                    
                                     <LocationMarker onChange={handleMapClick} />
                                     <RecenterMap lat={currentLat} lng={currentLng} />
                                 </MapContainer>
                              )}
                              
-                             {/* Floating Crosshair overlay for better UX */}
-                             <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[400] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <Crosshair className="text-slate-500/50" size={32} strokeWidth={1} />
-                             </div>
-
                              <button 
                                 onClick={() => getCurrentLocation(activeTab)}
                                 disabled={isLocating}
-                                className="absolute bottom-6 right-6 z-[400] bg-white dark:bg-slate-800 text-slate-700 dark:text-white p-4 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition-all"
-                                title="تحديد موقعي الحالي"
+                                className="absolute bottom-4 right-4 z-[400] bg-white dark:bg-slate-800 text-slate-700 dark:text-white p-3 rounded-full shadow-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 active:scale-95 transition-all"
+                                title="موقعي الحالي"
                              >
-                                 {isLocating ? <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> : <Locate size={24} className="text-blue-600" />}
+                                 {isLocating ? <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> : <Locate size={20} />}
                              </button>
 
-                             <div className="absolute top-4 left-4 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur px-4 py-2 rounded-xl text-xs font-bold shadow-lg border border-slate-200 dark:border-slate-700 pointer-events-none flex items-center gap-2">
-                                 <Navigation size={14} className="text-blue-500" />
-                                 اضغط على الخريطة لتغيير نقطة المركز
+                             <div className="absolute top-2 left-2 z-[400] bg-white/90 dark:bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-bold shadow border border-slate-200 dark:border-slate-700 pointer-events-none flex items-center gap-1">
+                                 <Navigation size={10} className="text-blue-500" />
+                                 اضغط على الخريطة لتحديد الموقع بدقة
                              </div>
                          </div>
                          
                          <div className="flex justify-between items-center text-xs px-1">
-                             <div className="flex items-center gap-2 font-mono">
-                                 <span className="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">Lat: {currentLat.toFixed(6)}</span>
-                                 <span className="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">Lng: {currentLng.toFixed(6)}</span>
+                             <div className="flex items-center gap-2">
+                                 <span className="text-slate-400 font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">Lat: {currentLat.toFixed(6)}</span>
+                                 <span className="text-slate-400 font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">Lng: {currentLng.toFixed(6)}</span>
                              </div>
                          </div>
 

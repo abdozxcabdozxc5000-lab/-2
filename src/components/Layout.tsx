@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, UserCog, Moon, Sun, Fingerprint, History, Cloud, CloudOff, Info, X, CheckCircle, AlertTriangle, Download } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, UserCog, Moon, Sun, Fingerprint, History, Cloud, CloudOff, Info, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { UserRole } from '../types';
 import { Permissions } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,15 +19,12 @@ interface LayoutProps {
   cloudError?: string | null;
   notifications: Array<{id: string, message: string, type: 'info' | 'success' | 'error'}>;
   removeNotification: (id: string) => void;
-  installPrompt?: any;
-  onInstall?: () => void;
 }
 
 const Layout: React.FC<LayoutProps> = ({ 
   children, activeTab, onTabChange, userRole, currentUserName, 
   currentUserRole, onLogout, darkMode, toggleDarkMode,
-  isSyncing, cloudError, notifications, removeNotification,
-  installPrompt, onInstall
+  isSyncing, cloudError, notifications, removeNotification
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -57,23 +54,23 @@ const Layout: React.FC<LayoutProps> = ({
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 right-0 z-50 w-72 bg-white dark:bg-slate-800 shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-in-out border-l border-slate-100 dark:border-slate-700 flex flex-col
-        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 lg:static lg:flex
+        fixed inset-y-0 right-0 z-50 w-72 bg-white dark:bg-slate-800 shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-in-out border-l border-slate-100 dark:border-slate-700
+        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0 lg:static lg:block
         print:hidden
       `}>
-        <div className="flex items-center justify-between px-8 h-24 border-b border-slate-50 dark:border-slate-700 shrink-0">
+        <div className="flex items-center justify-between px-8 h-24 border-b border-slate-50 dark:border-slate-700">
            <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
                 <Fingerprint size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-black text-slate-800 dark:text-white leading-none">مواظب <span className="text-blue-600">PRO</span></h1>
-                <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-widest uppercase">System v2.0</p>
+                <h1 className="text-lg font-black text-slate-800 dark:text-white leading-none">برنامج <span className="text-blue-600">الحضور والانصراف</span></h1>
+                <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Management System</p>
               </div>
            </div>
         </div>
         
-        <div className="p-4 m-4 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 shrink-0">
+        <div className="p-6 m-4 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg">
                 {currentUserName.charAt(0)}
@@ -90,7 +87,7 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
         </div>
 
-        <nav className="px-4 py-2 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+        <nav className="px-4 py-2 space-y-2">
           {menuItems.filter(i => i.visible).map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -115,16 +112,7 @@ const Layout: React.FC<LayoutProps> = ({
           })}
         </nav>
 
-        <div className="p-6 space-y-3 shrink-0">
-            {installPrompt && (
-                <button 
-                    onClick={onInstall}
-                    className="flex items-center justify-center w-full px-5 py-3 text-xs font-black text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-[1.25rem] shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-transform animate-pulse-soft"
-                >
-                    <Download size={16} className="ml-2" />
-                    تثبيت التطبيق
-                </button>
-            )}
+        <div className="absolute bottom-6 left-6 right-6">
             <button 
                 onClick={onLogout}
                 className="flex items-center justify-center w-full px-5 py-4 text-sm font-black text-red-500 transition-all rounded-[1.25rem] border-2 border-transparent hover:border-red-100 dark:hover:border-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/10 group"
@@ -227,3 +215,4 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 export default Layout;
+    
