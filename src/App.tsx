@@ -10,8 +10,10 @@ import Login from './components/Login';
 import BiometricSimulator from './components/BiometricSimulator'; 
 import ActivityLogs from './components/ActivityLogs';
 import PageTransition from './components/PageTransition';
+import SystemPortal from './components/SystemPortal';
+import PayrollManager from './components/PayrollManager';
 import { INITIAL_EMPLOYEES, generateMockAttendance, DEFAULT_CONFIG } from './constants';
-import { Employee, AttendanceRecord, AppConfig, UserRole, ActivityLog, ActionType } from './types';
+import { Employee, AttendanceRecord, AppConfig, UserRole, ActivityLog, ActionType, Loan, PayrollRecord } from './types';
 import { 
     initSupabase, 
     subscribeToRealtime, 
@@ -29,10 +31,10 @@ import { calculateDistance } from './utils';
 import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
-// Loud notification sound (Digital Alarm Beep)
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
+  const [currentSystem, setCurrentSystem] = useState<'portal' | 'attendance' | 'payroll'>('portal'); // New State for System Switching
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('mowazeb_theme') === 'dark');
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'info' | 'success' | 'error'}>>([]);
@@ -42,6 +44,8 @@ function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
   
   // App State
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +54,6 @@ function App() {
   const [isPermissionError, setIsPermissionError] = useState(false);
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
 
-  // Geo-Notification State
   const [hasNotifiedProximity, setHasNotifiedProximity] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -81,35 +84,24 @@ function App() {
     localStorage.setItem('mowazeb_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Initialize Audio
   useEffect(() => {
       audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
   }, []);
 
-  // --- FAST PROXIMITY NOTIFICATION LOGIC ---
   useEffect(() => {
       if (!currentUser || !config) return;
-
-      // 1. Identify Branch & Settings
+      // Proximity Logic remains same...
       const branchName = currentUser.branch === 'factory' ? 'factory' : 'office';
       const branchSettings = config[branchName];
-
-      // 2. Check if Location Tracking is Enabled
       if (!branchSettings?.locationEnabled) return;
-
-      // 3. Check if ALREADY checked in for today
       const today = new Date().toISOString().split('T')[0];
       const recordId = `${currentUser.id}-${today}`;
       const record = attendanceRecords.find(r => r.id === recordId);
-      
       if (record?.checkIn) {
           if (hasNotifiedProximity) setHasNotifiedProximity(false); 
           return;
       }
-
       if (hasNotifiedProximity) return;
-
-      // 4. Start Watching Location with HIGH SPEED Settings
       if ('geolocation' in navigator) {
           const watchId = navigator.geolocation.watchPosition(
               (position) => {
@@ -117,42 +109,25 @@ function App() {
                   const currentLng = position.coords.longitude;
                   const targetLat = branchSettings.lat || 0;
                   const targetLng = branchSettings.lng || 0;
-                  
                   const distance = calculateDistance(currentLat, currentLng, targetLat, targetLng);
                   const allowedRadius = branchSettings.radius || 100;
-                  
-                  // Trigger if within radius + 50m buffer
                   if (distance <= (allowedRadius + 50)) {
-                      // PLAY SOUND
-                      if (audioRef.current) {
-                          audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
-                      }
-                      
+                      if (audioRef.current) audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e));
                       notify(`🔔 تنبيه: لقد وصلت إلى ${branchName === 'factory' ? 'المصنع' : 'المكتب'}! لا تنس تسجيل الحضور.`, 'info');
                       setHasNotifiedProximity(true);
                   }
               },
-              (err) => {
-                  console.warn("Background Geo Warning (Silent):", err.message);
-              },
-              { 
-                  enableHighAccuracy: true, 
-                  maximumAge: 60000, // CRITICAL: Accept cached position from last 60s for INSTANT check
-                  timeout: 20000     // Long timeout to avoid error spam
-              }
+              (err) => console.warn("Background Geo Warning (Silent):", err.message),
+              { enableHighAccuracy: true, maximumAge: 60000, timeout: 20000 }
           );
-
           return () => navigator.geolocation.clearWatch(watchId);
       }
-
   }, [currentUser, config, attendanceRecords, hasNotifiedProximity]);
 
   const processLoadedConfig = (dbConfig: any): AppConfig => {
       if (!dbConfig) return DEFAULT_CONFIG;
       const newConfig: AppConfig = { ...DEFAULT_CONFIG, ...dbConfig };
-
       if (!dbConfig.factory && dbConfig.companyLat !== undefined) {
-          console.log("Migrating legacy config...");
           newConfig.factory = {
               ...DEFAULT_CONFIG.factory,
               lat: Number(dbConfig.companyLat),
@@ -173,13 +148,11 @@ function App() {
   const loadDataFromCloud = useCallback(async () => {
       setIsLoading(true);
       setCloudError(null);
-      
       initSupabase();
       const data = await downloadAllData();
 
       if (data.success) {
           const fetchedEmployees = data.employees || [];
-          
           if (!fetchedEmployees || fetchedEmployees.length === 0) {
               const defaultConfig: AppConfig = DEFAULT_CONFIG;
               const mockRecords = generateMockAttendance(INITIAL_EMPLOYEES);
@@ -191,6 +164,8 @@ function App() {
               setEmployees(fetchedEmployees);
               setAttendanceRecords(data.records || []);
               setLogs(data.logs || []);
+              setLoans(data.loans || []);
+              setPayrolls(data.payrolls || []);
               setConfig(processLoadedConfig(data.config));
 
               const savedSessionId = localStorage.getItem('mowazeb_session_id');
@@ -199,7 +174,12 @@ function App() {
                   if (foundUser) {
                       setCurrentUser(foundUser);
                       const isTopManagement = foundUser.role === 'general_manager' || foundUser.role === 'owner';
-                      setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
+                      // If top management, go to portal first
+                      if (isTopManagement) setCurrentSystem('portal');
+                      else {
+                          setCurrentSystem('attendance');
+                          setActiveTab('biometric');
+                      }
                   }
               }
           }
@@ -224,6 +204,8 @@ function App() {
                        if (data.employees) setEmployees(data.employees);
                        if (data.records) setAttendanceRecords(data.records || []);
                        if (data.logs) setLogs(data.logs);
+                       if (data.loans) setLoans(data.loans);
+                       if (data.payrolls) setPayrolls(data.payrolls);
                        if (data.config) setConfig(processLoadedConfig(data.config));
                    }
                });
@@ -236,7 +218,13 @@ function App() {
       localStorage.setItem('mowazeb_session_id', user.id);
       
       const isTopManagement = user.role === 'general_manager' || user.role === 'owner';
-      setActiveTab(isTopManagement ? 'dashboard' : 'biometric');
+      
+      if (isTopManagement) {
+          setCurrentSystem('portal');
+      } else {
+          setCurrentSystem('attendance');
+          setActiveTab(user.role === 'employee' ? 'biometric' : 'dashboard');
+      }
 
       setTimeout(() => {
           addLog('LOGIN', 'System', 'قام المستخدم بتسجيل الدخول');
@@ -248,6 +236,7 @@ function App() {
       if (currentUser) addLog('LOGOUT', 'System', 'قام المستخدم بتسجيل الخروج');
       localStorage.removeItem('mowazeb_session_id');
       setCurrentUser(null);
+      setCurrentSystem('portal');
   };
 
   const handleUpdateRecord = async (newRecord: AttendanceRecord) => {
@@ -256,10 +245,8 @@ function App() {
       if (existsIdx >= 0) updatedRecords[existsIdx] = newRecord;
       else updatedRecords.push(newRecord);
       setAttendanceRecords(updatedRecords);
-      
       const res = await upsertSingleRecord(newRecord);
       if (res?.error) notify(`فشل الحفظ السحابي: ${res.error.message}`, 'error');
-
       const empName = employees.find(e => e.id === newRecord.employeeId)?.name || 'مجهول';
       addLog('UPDATE', `Attendance: ${empName}`, `تعديل سجل بتاريخ ${newRecord.date}`);
   };
@@ -267,12 +254,9 @@ function App() {
   const handleDeleteRecord = async (id: string) => {
       const recordToDelete = attendanceRecords.find(r => r.id === id);
       if (!recordToDelete) return;
-
       setAttendanceRecords(prev => prev.filter(r => r.id !== id));
-      
       const res = await deleteSingleRecord(id);
       if (res?.error) notify(`فشل الحذف السحابي: ${res.error.message}`, 'error');
-
       const empName = employees.find(e => e.id === recordToDelete.employeeId)?.name || 'مجهول';
       addLog('DELETE', `Attendance: ${empName}`, `مسح سجل بتاريخ ${recordToDelete.date}`);
       notify('تم مسح بيانات السجل بنجاح', 'success');
@@ -282,61 +266,42 @@ function App() {
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
       const timeStr = today.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
-
       const todayRecordId = `${employeeId}-${dateStr}`;
       const yesterdayRecordId = `${employeeId}-${yesterdayStr}`;
-      
       const todayRecord = attendanceRecords.find(r => r.id === todayRecordId);
       const yesterdayRecord = attendanceRecords.find(r => r.id === yesterdayRecordId);
-      
       const employeeName = employees.find(e => e.id === employeeId)?.name || 'Unknown';
-      
       let newRecord: AttendanceRecord;
-      let status: 'in' | 'out' | 'error' = 'in';
-      let message = '';
       
       if (yesterdayRecord && yesterdayRecord.checkIn && !yesterdayRecord.checkOut) {
-          newRecord = { 
-              ...yesterdayRecord, 
-              checkOut: timeStr, 
-              source: 'device', 
-              photo: photo || yesterdayRecord.photo 
-          };
-          message = `تم تسجيل خروج (وردية أمس) ${timeStr}`;
-          status = 'out';
-          
+          newRecord = { ...yesterdayRecord, checkOut: timeStr, source: 'device', photo: photo || yesterdayRecord.photo };
           setAttendanceRecords(prev => prev.map(r => r.id === yesterdayRecordId ? newRecord : r));
-          addLog('ATTENDANCE', `Device: ${employeeName}`, `خروج ليلية (بعد 12 ص) ${timeStr}`);
-          upsertSingleRecord(newRecord).then(res => { if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error'); });
+          addLog('ATTENDANCE', `Device: ${employeeName}`, `خروج ليلية ${timeStr}`);
+          upsertSingleRecord(newRecord);
           notify(`تم تسجيل انصراف ${employeeName} (وردية أمس)`, 'success');
-          
-          return { status, time: timeStr, message };
+          return { status: 'out', time: timeStr, message: `تم تسجيل خروج (وردية أمس) ${timeStr}` };
       }
 
       if (!todayRecord) {
           newRecord = { id: todayRecordId, employeeId, date: dateStr, checkIn: timeStr, status: 'present', source: 'device', location, photo };
-          message = `تم تسجيل دخول ${timeStr}`;
           setAttendanceRecords(prev => [...prev, newRecord]);
           addLog('ATTENDANCE', `Device: ${employeeName}`, `دخول ${timeStr}`);
-          upsertSingleRecord(newRecord).then(res => { if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error'); });
+          upsertSingleRecord(newRecord);
           notify(`تم تسجيل حضور ${employeeName}`, 'success');
+          return { status: 'in', time: timeStr, message: `تم تسجيل دخول ${timeStr}` };
       } else if (todayRecord.checkIn && !todayRecord.checkOut) {
           newRecord = { ...todayRecord, checkOut: timeStr, source: 'device', photo: photo || todayRecord.photo };
-          message = `تم تسجيل خروج ${timeStr}`;
-          status = 'out';
           setAttendanceRecords(prev => prev.map(r => r.id === todayRecordId ? newRecord : r));
           addLog('ATTENDANCE', `Device: ${employeeName}`, `خروج ${timeStr}`);
-          upsertSingleRecord(newRecord).then(res => { if (res?.error) notify(`فشل حفظ البصمة: ${res.error.message}`, 'error'); });
+          upsertSingleRecord(newRecord);
           notify(`تم تسجيل انصراف ${employeeName}`, 'success');
+          return { status: 'out', time: timeStr, message: `تم تسجيل خروج ${timeStr}` };
       } else {
           return { status: 'error', time: timeStr, message: 'تم التسجيل مسبقاً لهذا اليوم' };
       }
-
-      return { status, time: timeStr, message };
   };
 
   const handleConfigChange = async (newConfig: AppConfig) => {
@@ -349,7 +314,6 @@ function App() {
   const handleAddUser = async (user: Omit<Employee, 'id'>) => {
       const newId = Date.now().toString();
       const newUser: Employee = { ...user, id: newId };
-      
       setEmployees(prev => [...prev, newUser]);
       const res = await upsertSingleEmployee(newUser);
       if (res?.error) notify(`فشل حفظ المستخدم: ${res.error.message}`, 'error');
@@ -372,29 +336,14 @@ function App() {
       addLog('DELETE', `User: ${user?.name}`, 'حذف موظف من النظام');
   };
 
+  // --- Rendering Logic ---
+
   if (isLoading) {
       return (
           <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060B18] text-white relative overflow-hidden font-sans" dir="rtl">
-              <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse"></div>
-              <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse animation-delay-2000"></div>
               <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
-                  <div className="relative">
-                      <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full animate-pulse"></div>
-                      <div className="w-28 h-28 bg-gradient-to-tr from-slate-800 to-slate-900 rounded-[2.5rem] border border-white/10 flex items-center justify-center shadow-2xl relative rotate-3">
-                           <Fingerprint size={56} className="text-blue-500 animate-pulse drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-                      </div>
-                  </div>
-                  <div className="text-center space-y-4">
-                      <h1 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
-                          برنامج <span className="text-blue-500">الحضور والانصراف</span>
-                      </h1>
-                      <div className="flex flex-col items-center gap-3">
-                          <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
-                              <Loader2 size={16} className="animate-spin text-blue-400" />
-                              <span className="text-sm font-bold text-slate-300">جاري تهيئة النظام...</span>
-                          </div>
-                      </div>
-                  </div>
+                  <Loader2 size={48} className="animate-spin text-blue-500" />
+                  <span className="text-sm font-bold text-slate-300">جاري تحميل النظام...</span>
               </div>
           </div>
       );
@@ -415,25 +364,50 @@ function App() {
   
   if (!config) return null;
 
-  const userRole = currentUser.role;
+  // --- System Switching Logic ---
+  
+  if (currentSystem === 'portal') {
+      return <SystemPortal 
+                userName={currentUser.name} 
+                onSelectSystem={(sys) => setCurrentSystem(sys)} 
+                onLogout={handleLogout} 
+             />;
+  }
 
+  if (currentSystem === 'payroll') {
+      return (
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white p-6 font-sans dir-rtl">
+              <PayrollManager 
+                  employees={employees}
+                  attendanceRecords={attendanceRecords}
+                  loans={loans}
+                  payrolls={payrolls}
+                  config={config}
+                  onUpdateData={loadDataFromCloud}
+                  onExit={() => setCurrentSystem('portal')}
+              />
+          </div>
+      );
+  }
+
+  // Fallback to Attendance System Layout
   return (
     <Layout 
         activeTab={activeTab} onTabChange={setActiveTab} 
-        userRole={userRole} currentUserName={currentUser.name} currentUserRole={userRole}
+        userRole={currentUser.role} currentUserName={currentUser.name} currentUserRole={currentUser.role}
         onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)}
         isSyncing={isSyncing} cloudError={cloudError}
         notifications={notifications} removeNotification={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
     >
       <AnimatePresence mode="wait">
         <PageTransition key={activeTab}>
-            {activeTab === 'dashboard' && <Dashboard employees={employees} attendanceRecords={attendanceRecords} config={config} currentUserRole={userRole} currentEmployeeId={currentUser.id} />}
-            {activeTab === 'employees' && <EmployeeManager employees={employees} attendanceRecords={attendanceRecords} config={config} userRole={userRole} onUpdateRecord={handleUpdateRecord} onDeleteRecord={handleDeleteRecord} />}
+            {activeTab === 'dashboard' && <Dashboard employees={employees} attendanceRecords={attendanceRecords} config={config} currentUserRole={currentUser.role} currentEmployeeId={currentUser.id} />}
+            {activeTab === 'employees' && <EmployeeManager employees={employees} attendanceRecords={attendanceRecords} config={config} userRole={currentUser.role} onUpdateRecord={handleUpdateRecord} onDeleteRecord={handleDeleteRecord} />}
             {activeTab === 'biometric' && <BiometricSimulator employees={employees} onDevicePunch={handleDevicePunch} currentUser={currentUser} config={config} />}
-            {activeTab === 'reports' && <Reports employees={employees} attendanceRecords={attendanceRecords} config={config} currentUserRole={userRole} currentEmployeeId={currentUser.id} />}
+            {activeTab === 'reports' && <Reports employees={employees} attendanceRecords={attendanceRecords} config={config} currentUserRole={currentUser.role} currentEmployeeId={currentUser.id} />}
             {activeTab === 'users' && <UserManagement employees={employees} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
             {activeTab === 'logs' && <ActivityLogs logs={logs} />}
-            {activeTab === 'settings' && <Settings config={config} onConfigChange={handleConfigChange} userRole={userRole} onRoleChange={() => {}} onResetData={() => {}} />}
+            {activeTab === 'settings' && <Settings config={config} onConfigChange={handleConfigChange} userRole={currentUser.role} onRoleChange={() => {}} onResetData={() => {}} />}
         </PageTransition>
       </AnimatePresence>
     </Layout>

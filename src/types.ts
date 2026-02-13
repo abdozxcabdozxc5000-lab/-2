@@ -1,6 +1,7 @@
 
-
 export type UserRole = 'general_manager' | 'owner' | 'manager' | 'office_manager' | 'accountant' | 'employee';
+
+export type EmploymentType = 'factory' | 'office' | 'sales' | 'owner';
 
 export interface Employee {
   id: string;
@@ -13,6 +14,9 @@ export interface Employee {
   branch?: 'office' | 'factory'; 
   joinDate: string;
   avatar: string;
+  // Payroll Fields
+  basicSalary?: number;
+  employmentType?: EmploymentType;
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'weekend' | 'leave' | 'absent_penalty' | 'under_review';
@@ -22,10 +26,10 @@ export type RecordSource = 'manual' | 'device' | 'app';
 export interface AttendanceRecord {
   id: string;
   employeeId: string;
-  date: string; // YYYY-MM-DD (This is Check-In Date)
-  checkIn?: string; // HH:mm format
-  checkOut?: string; // HH:mm format
-  checkOutDate?: string; // YYYY-MM-DD (Explicit Departure Date)
+  date: string; // YYYY-MM-DD
+  checkIn?: string; 
+  checkOut?: string; 
+  checkOutDate?: string; 
   status: AttendanceStatus;
   note?: string;
   source?: RecordSource;
@@ -37,6 +41,42 @@ export interface AttendanceRecord {
       inRange: boolean;
       distance: number;
   };
+}
+
+export interface Loan {
+    id: string;
+    employeeId: string;
+    totalAmount: number;
+    paidAmount: number;
+    installmentPerMonth: number; // المبلغ المتفق خصمه شهرياً
+    startDate: string;
+    status: 'active' | 'completed';
+}
+
+export interface PayrollRecord {
+    id: string;
+    employeeId: string;
+    month: number;
+    year: number;
+    basicSalary: number;
+    
+    // Additions
+    overtimeHours: number;
+    overtimeValue: number;
+    incentives: number; // حوافز (مكتب)
+    commissions: number; // عمولات (سيلز)
+    bonuses: number; // مكافآت أخرى
+
+    // Deductions
+    absentDays: number;
+    absentValue: number;
+    penaltyValue: number; // خصومات جزائية
+    loanDeduction: number; // خصم السلفة
+    insurance: number; // تأمينات
+
+    netSalary: number;
+    status: 'draft' | 'paid';
+    generatedAt: string;
 }
 
 export interface DailyStats {
@@ -86,19 +126,16 @@ export interface BranchSettings {
     lat: number;
     lng: number;
     radius: number;
-    weekendDays: number[]; // 5=Friday, 6=Saturday, etc.
+    weekendDays: number[]; 
 }
 
 export interface AppConfig {
-  // Global Settings
   gracePeriodMinutes: number;
   weightCommitment: number;
   weightOvertime: number;
   weightAbsence: number;
   penaltyValue: number;
   holidays: Holiday[];
-
-  // Branch Specific Settings
   office: BranchSettings;
   factory: BranchSettings;
 }
@@ -109,7 +146,7 @@ export interface SupabaseConfig {
     isConnected: boolean;
 }
 
-export type ActionType = 'LOGIN' | 'LOGOUT' | 'CREATE' | 'UPDATE' | 'DELETE' | 'SETTINGS' | 'ATTENDANCE';
+export type ActionType = 'LOGIN' | 'LOGOUT' | 'CREATE' | 'UPDATE' | 'DELETE' | 'SETTINGS' | 'ATTENDANCE' | 'PAYROLL';
 
 export interface ActivityLog {
     id: string;
