@@ -64,12 +64,14 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             });
 
             // 3. Overtime Calc
-            const hourlyRate = basic > 0 ? (basic / 30 / 8) : 0;
+            // Updated Rule: Divide by 30 days, then by 9 hours
+            const hourlyRate = basic > 0 ? (basic / 30 / 9) : 0;
             let overtimeValue = 0;
             
             if (type === 'factory') {
                 const overtimeHours = totalOvertimeMinutes / 60;
-                overtimeValue = Math.round(overtimeHours * hourlyRate * 1.5); // 1.5x multiplier
+                // Updated Rule: Multiplier is 1.0 (Hour for an Hour)
+                overtimeValue = Math.round(overtimeHours * hourlyRate * 1); 
             }
 
             // 4. Deductions
