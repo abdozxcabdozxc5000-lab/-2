@@ -500,7 +500,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             {isQuarterlyMonth && <th className="p-4 text-center bg-blue-50/50 text-blue-700">حافز ربع سنوي</th>}
                                             <th className="p-4 text-center bg-purple-50/50 text-purple-700">عمولات</th>
                                             <th className="p-4 text-center bg-yellow-50/50">مكافآت</th>
-                                            <th className="p-4 text-center bg-red-50/50">غياب/جزاء</th>
                                             <th className="p-4 text-center bg-red-50/50 font-bold text-red-600">خصم سلفة</th>
                                             <th className="p-4 text-center font-black text-base">الصافي</th>
                                         </tr>
@@ -564,10 +563,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                         ) : '-'}
                                                     </td>
 
-                                                    {/* Deductions */}
-                                                    <td className="p-4 text-center text-red-500">
-                                                        {(row.absentValue + row.penaltyValue)}
-                                                    </td>
                                                     <td className="p-4 text-center font-bold text-red-700">
                                                         {row.loanDeduction > 0 ? row.loanDeduction : '-'}
                                                     </td>
