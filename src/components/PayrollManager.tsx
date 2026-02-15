@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Employee, AttendanceRecord, PayrollRecord, Loan, AppConfig, EmploymentType } from '../types';
 import { calculateDailyStats, minutesToTime } from '../utils';
 import { upsertPayroll, upsertLoan, upsertSingleEmployee, deleteLoan, deletePayrollArchive } from '../supabaseClient';
@@ -21,6 +21,8 @@ interface PayrollManagerProps {
     onExit: () => void;
 }
 
+const ITEMS_PER_PAGE = 20; // عدد العناصر في الصفحة الواحدة
+
 const PayrollManager: React.FC<PayrollManagerProps> = ({ 
     employees, attendanceRecords, loans, payrolls, config, onUpdateData, onExit 
 }) => {
@@ -29,6 +31,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [searchQuery, setSearchQuery] = useState('');
     const [processing, setProcessing] = useState(false);
+    
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
 
     // --- SETUP STATE ---
     const [editingEmp, setEditingEmp] = useState<string | null>(null);
@@ -45,6 +50,11 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     
     // --- PAYSLIP MODAL STATE ---
     const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
+
+    // Reset pagination when tab or search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchQuery]);
 
     // Helper: Is Quarterly Month? (Mar=2, Jun=5, Sep=8, Dec=11)
     const isQuarterlyMonth = (selectedMonth + 1) % 3 === 0;
@@ -117,7 +127,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             let loanDeduction = 0;
             if (activeLoan) {
                 const remaining = activeLoan.totalAmount - activeLoan.paidAmount;
-                // Default to installment, but allow editing later
                 loanDeduction = Math.min(activeLoan.installmentPerMonth, remaining);
             }
 
@@ -152,17 +161,23 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         }));
 
         setGeneratedData(finalPayrolls);
+        setCurrentPage(1); // Reset to first page on new calculation
     };
 
-    const handleUpdateRecord = (index: number, field: keyof PayrollRecord, value: number) => {
-        const updated = [...generatedData];
-        updated[index] = { ...updated[index], [field]: value };
-        
-        // Recalculate Net
-        const p = updated[index];
-        p.netSalary = (p.basicSalary + p.overtimeValue + p.incentives + p.commissions + p.bonuses) - (p.absentValue + p.penaltyValue + p.deductions + p.loanDeduction + p.insurance);
-        
-        setGeneratedData(updated);
+    // Updated to use ID instead of Index for safety with pagination
+    const handleUpdateRecord = (id: string, field: keyof PayrollRecord, value: number) => {
+        setGeneratedData(prevData => {
+            const updatedData = prevData.map(record => {
+                if (record.id === id) {
+                    const updatedRecord = { ...record, [field]: value };
+                    // Recalculate Net
+                    updatedRecord.netSalary = (updatedRecord.basicSalary + updatedRecord.overtimeValue + updatedRecord.incentives + updatedRecord.commissions + updatedRecord.bonuses) - (updatedRecord.absentValue + updatedRecord.penaltyValue + updatedRecord.deductions + updatedRecord.loanDeduction + updatedRecord.insurance);
+                    return updatedRecord;
+                }
+                return record;
+            });
+            return updatedData;
+        });
     };
 
     const handleSavePayroll = async () => {
@@ -176,7 +191,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 const loan = loans.find(l => l.employeeId === record.employeeId && l.status === 'active');
                 if (loan) {
                     const newPaid = loan.paidAmount + record.loanDeduction;
-                    // Check if fully paid (or slight overpayment due to manual entry)
                     const newStatus = newPaid >= loan.totalAmount ? 'completed' : 'active';
                     await upsertLoan({ ...loan, paidAmount: newPaid, status: newStatus });
                 }
@@ -185,9 +199,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         
         setProcessing(false);
         alert('تم حفظ الرواتب وترحيل السلف بنجاح!');
-        onUpdateData(); // Reload data from cloud to update history
-        setGeneratedData([]); // Clear current generation
-        setActiveTab('history'); // Go to history
+        onUpdateData(); 
+        setGeneratedData([]); 
+        setActiveTab('history'); 
     };
 
     const handleDeleteArchive = async (month: number, year: number) => {
@@ -253,7 +267,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             return;
         }
 
-        // 1. تحضير البيانات بتنسيق مناسب للإكسل
         const formattedData = data.map(record => {
             const emp = employees.find(e => e.id === record.employeeId);
             const branchName = emp?.branch === 'factory' ? 'مصنع' : 'مكتب';
@@ -282,43 +295,18 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             };
         });
 
-        // 2. إنشاء ورقة العمل (Worksheet)
         const worksheet = XLSX.utils.json_to_sheet(formattedData);
-
-        // 3. ضبط عرض الأعمدة (Columns Width)
         const wscols = [
-            { wch: 10 }, // كود
-            { wch: 25 }, // الاسم
-            { wch: 15 }, // الوظيفة
-            { wch: 10 }, // الفرع
-            { wch: 12 }, // الأساسي
-            { wch: 10 }, // قيمة الساعة
-            { wch: 12 }, // ساعات إضافي
-            { wch: 12 }, // قيمة إضافي
-            { wch: 10 }, // حوافز
-            { wch: 10 }, // عمولات
-            { wch: 10 }, // مكافآت
-            { wch: 15 }, // إجمالي المستحق
-            { wch: 10 }, // أيام الغياب
-            { wch: 15 }, // خصم الغياب
-            { wch: 15 }, // خصومات إضافية
-            { wch: 12 }, // سداد السلف
-            { wch: 12 }, // تأمينات
-            { wch: 15 }, // إجمالي الاستقطاعات
-            { wch: 15 }, // الصافي
-            { wch: 12 }, // الحالة
+            { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, 
+            { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, 
+            { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }
         ];
         worksheet['!cols'] = wscols;
 
-        // 4. إنشاء ملف العمل (Workbook) مع تفعيل اتجاه اليمين لليسار (RTL)
         const workbook = XLSX.utils.book_new();
-        workbook.Workbook = {
-            Views: [{ RTL: true }]
-        };
-        
+        workbook.Workbook = { Views: [{ RTL: true }] };
         XLSX.utils.book_append_sheet(workbook, worksheet, "مسير الرواتب");
 
-        // 5. حفظ الملف
         const fileName = `Payroll_Report_${new Date().getFullYear()}_${new Date().getMonth()+1}_${new Date().getTime()}.xlsx`;
         XLSX.writeFile(workbook, fileName);
     };
@@ -332,6 +320,42 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             default: return 'غير محدد';
         }
     };
+
+    // --- RENDER HELPERS ---
+    
+    // 1. Prepare GENERATE Data
+    const filteredPayroll = useMemo(() => {
+        return generatedData.filter(row => {
+            const empName = employees.find(e => e.id === row.employeeId)?.name || '';
+            return empName.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+    }, [generatedData, employees, searchQuery]);
+
+    const paginatedPayroll = useMemo(() => {
+        return filteredPayroll.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    }, [filteredPayroll, currentPage]);
+
+    // 2. Prepare SETUP Data
+    const filteredEmployees = useMemo(() => {
+        return employees.filter(e => e.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [employees, searchQuery]);
+
+    const paginatedEmployees = useMemo(() => {
+        return filteredEmployees.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    }, [filteredEmployees, currentPage]);
+
+    // 3. Prepare LOANS Data
+    const filteredLoans = useMemo(() => {
+        return loans.filter(l => {
+            const name = employees.find(e => e.id === l.employeeId)?.name || '';
+            return name.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+    }, [loans, employees, searchQuery]);
+
+    const paginatedLoans = useMemo(() => {
+        return filteredLoans.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    }, [filteredLoans, currentPage]);
+
 
     return (
         <div className="space-y-8 pb-20 relative animate-fade-in">
@@ -494,10 +518,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                        {generatedData.filter(row => {
-                                            const empName = employees.find(e => e.id === row.employeeId)?.name || '';
-                                            return empName.toLowerCase().includes(searchQuery.toLowerCase());
-                                        }).map((row, idx) => {
+                                        {paginatedPayroll.map((row) => {
                                             const emp = employees.find(e => e.id === row.employeeId);
                                             const isFactory = emp?.employmentType === 'factory';
                                             
@@ -542,7 +563,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                         {emp?.employmentType === 'sales' ? (
                                                             <input 
                                                                 type="number" value={row.commissions} 
-                                                                onChange={e => handleUpdateRecord(idx, 'commissions', parseFloat(e.target.value))}
+                                                                onChange={e => handleUpdateRecord(row.id, 'commissions', parseFloat(e.target.value))}
                                                                 className="w-20 p-1.5 border border-slate-200 rounded-lg text-center text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-all"
                                                             />
                                                         ) : '-'}
@@ -550,7 +571,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     <td className="p-5 text-center">
                                                         <input 
                                                             type="number" value={row.bonuses} 
-                                                            onChange={e => handleUpdateRecord(idx, 'bonuses', parseFloat(e.target.value))}
+                                                            onChange={e => handleUpdateRecord(row.id, 'bonuses', parseFloat(e.target.value))}
                                                             className="w-20 p-1.5 border border-slate-200 rounded-lg text-center text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-all"
                                                         />
                                                     </td>
@@ -566,7 +587,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                                         let val = parseFloat(e.target.value);
                                                                         if (isNaN(val)) val = 0;
                                                                         if (val > remainingLoan) val = remainingLoan;
-                                                                        handleUpdateRecord(idx, 'loanDeduction', val);
+                                                                        handleUpdateRecord(row.id, 'loanDeduction', val);
                                                                     }}
                                                                     className="w-20 p-1.5 border border-orange-200 rounded-lg text-center text-sm font-bold text-orange-600 outline-none focus:ring-2 focus:ring-orange-500 bg-orange-50 focus:bg-white transition-all"
                                                                 />
@@ -577,7 +598,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     <td className="p-5 text-center">
                                                         <input 
                                                             type="number" value={row.deductions || 0} 
-                                                            onChange={e => handleUpdateRecord(idx, 'deductions', parseFloat(e.target.value))}
+                                                            onChange={e => handleUpdateRecord(row.id, 'deductions', parseFloat(e.target.value))}
                                                             className="w-20 p-1.5 border border-red-200 rounded-lg text-center text-sm font-bold text-red-600 outline-none focus:ring-2 focus:ring-red-500 bg-red-50 focus:bg-white transition-all"
                                                         />
                                                     </td>
@@ -601,18 +622,29 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </table>
                             </div>
                             
-                            {/* Pagination Footer */}
-                            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm text-slate-500">
-                                <div>عرض 1 إلى {generatedData.length} من {generatedData.length} نتيجة</div>
-                                <div className="flex gap-1">
-                                    <button className="px-3 py-1 bg-white border rounded hover:bg-slate-50 disabled:opacity-50">السابق</button>
-                                    <button className="px-3 py-1 bg-blue-600 text-white rounded font-bold">1</button>
-                                    <button className="px-3 py-1 bg-white border rounded hover:bg-slate-50">2</button>
-                                    <button className="px-3 py-1 bg-white border rounded hover:bg-slate-50">3</button>
-                                    <button className="px-3 py-1 bg-white border rounded hover:bg-slate-50">...</button>
-                                    <button className="px-3 py-1 bg-white border rounded hover:bg-slate-50">التالي</button>
+                            {/* Conditional Pagination Footer */}
+                            {filteredPayroll.length > ITEMS_PER_PAGE && (
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm text-slate-500">
+                                    <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredPayroll.length)} من {filteredPayroll.length} نتيجة</div>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1 bg-white border rounded hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            السابق
+                                        </button>
+                                        <span className="px-3 py-1 bg-blue-600 text-white rounded font-bold">{currentPage}</span>
+                                        <button 
+                                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredPayroll.length / ITEMS_PER_PAGE), p + 1))}
+                                            disabled={currentPage * ITEMS_PER_PAGE >= filteredPayroll.length}
+                                            className="px-3 py-1 bg-white border rounded hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            التالي
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -645,7 +677,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                            {employees.filter(e => e.name.toLowerCase().includes(searchQuery.toLowerCase())).map(emp => (
+                            {paginatedEmployees.map(emp => (
                                 <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
                                     <td className="p-5 font-bold text-slate-700 dark:text-white flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black">
@@ -735,15 +767,17 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                         </tbody>
                     </table>
                     
-                    {/* Pagination Footer */}
-                    <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm text-slate-500">
-                        <div>عرض 1 إلى {employees.length} من {employees.length} موظف</div>
-                        <div className="flex gap-2">
-                            <button className="p-1 rounded hover:bg-white"><ChevronRight size={16} /></button>
-                            <button className="px-3 py-0.5 bg-emerald-500 text-white rounded text-xs font-bold">1</button>
-                            <button className="p-1 rounded hover:bg-white"><ChevronLeft size={16} /></button>
+                    {/* Conditional Pagination Footer */}
+                    {filteredEmployees.length > ITEMS_PER_PAGE && (
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm text-slate-500">
+                            <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredEmployees.length)} من {filteredEmployees.length} موظف</div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 rounded hover:bg-white"><ChevronRight size={16} /></button>
+                                <span className="px-3 py-0.5 bg-emerald-500 text-white rounded text-xs font-bold">{currentPage}</span>
+                                <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE), p + 1))} disabled={currentPage * ITEMS_PER_PAGE >= filteredEmployees.length} className="p-1 rounded hover:bg-white"><ChevronLeft size={16} /></button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 
@@ -836,7 +870,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {loans.length === 0 ? (
                                         <tr><td colSpan={7} className="p-12 text-center text-slate-400">لا توجد سلف نشطة حالياً</td></tr>
-                                    ) : loans.map(loan => {
+                                    ) : paginatedLoans.map(loan => {
                                         const emp = employees.find(e => e.id === loan.employeeId);
                                         const remaining = loan.totalAmount - loan.paidAmount;
                                         return (
@@ -873,9 +907,17 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </tbody>
                             </table>
                         </div>
-                        <div className="bg-slate-50 p-3 text-center text-xs text-slate-400 border-t border-slate-100">
-                            عرض 1 إلى {loans.length} من {loans.length} سجل
-                        </div>
+                        {/* Conditional Pagination Footer */}
+                        {filteredLoans.length > ITEMS_PER_PAGE && (
+                            <div className="bg-slate-50 p-3 text-center text-xs text-slate-400 border-t border-slate-100 flex justify-between items-center px-4">
+                                <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredLoans.length)} من {filteredLoans.length} سجل</div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 border rounded bg-white">السابق</button>
+                                    <span className="px-2 py-1">{currentPage}</span>
+                                    <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredLoans.length / ITEMS_PER_PAGE), p + 1))} disabled={currentPage * ITEMS_PER_PAGE >= filteredLoans.length} className="px-2 py-1 border rounded bg-white">التالي</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -928,7 +970,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
                                                     <td className="p-4 text-center font-mono text-green-600 font-bold">{row.overtimeValue.toLocaleString()}</td>
                                                     <td className="p-4 text-center text-purple-600">{(row.incentives + row.commissions + row.bonuses).toLocaleString()}</td>
-                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.loanDeduction + row.insurance).toLocaleString()}</td>
+                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance).toLocaleString()}</td>
                                                     <td className="p-4 text-center">
                                                         <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-sm">
                                                             {row.netSalary.toLocaleString()}
