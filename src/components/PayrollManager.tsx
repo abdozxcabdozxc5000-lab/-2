@@ -6,7 +6,8 @@ import { upsertPayroll, upsertLoan, upsertSingleEmployee, deleteLoan } from '../
 import { DEFAULT_PENALTY_VALUE } from '../constants';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
-    TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown, Trash2
+    TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown, Trash2,
+    FileText, Download, X, Share2, CreditCard
 } from 'lucide-react';
 
 interface PayrollManagerProps {
@@ -37,6 +38,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
     // --- GENERATE STATE ---
     const [generatedData, setGeneratedData] = useState<PayrollRecord[]>([]);
+    
+    // --- PAYSLIP MODAL STATE ---
+    const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
 
     // Helper: Is Quarterly Month? (Mar=2, Jun=5, Sep=8, Dec=11)
     const isQuarterlyMonth = (selectedMonth + 1) % 3 === 0;
@@ -74,13 +78,11 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             
             if (type === 'factory') {
                 const overtimeHours = totalOvertimeMinutes / 60;
-                // Multiplier is 1.0 (Hour for an Hour) as per user request
                 overtimeValue = Math.round(overtimeHours * hourlyRate * 1); 
             }
 
             // 4. Deductions
             const dayRate = basic / daysBase;
-            // --- UPDATED: Use Branch Specific Penalty Value ---
             const penaltyVal = branchConfig.penaltyValue ?? DEFAULT_PENALTY_VALUE;
             const penaltyValue = Math.round(unexcusedAbsences * dayRate * penaltyVal); 
 
@@ -101,15 +103,15 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 basicSalary: basic,
                 overtimeHours: totalOvertimeMinutes / 60,
                 overtimeValue: overtimeValue,
-                incentives: 0, // Manual input later
-                commissions: 0, // Manual input later
+                incentives: 0,
+                commissions: 0,
                 bonuses: 0,
                 absentDays: unexcusedAbsences,
                 absentValue: Math.round(unexcusedAbsences * dayRate),
                 penaltyValue: penaltyValue,
                 loanDeduction: loanDeduction,
                 insurance: 0,
-                netSalary: 0, // Calc at end
+                netSalary: 0, 
                 status: 'draft',
                 generatedAt: new Date().toISOString()
             };
@@ -140,10 +142,8 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         setProcessing(true);
         
         for (const record of generatedData) {
-            // 1. Save Payroll
             await upsertPayroll({ ...record, status: 'paid' });
 
-            // 2. Update Loan Balance
             if (record.loanDeduction > 0) {
                 const loan = loans.find(l => l.employeeId === record.employeeId && l.status === 'active');
                 if (loan) {
@@ -201,11 +201,40 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     const handleDeleteLoan = async (id: string) => {
         if (!confirm('هل أنت متأكد من حذف هذه السلفة نهائياً؟')) return;
         const res = await deleteLoan(id);
-        if (res.success) {
-            onUpdateData();
-        } else {
-            alert('حدث خطأ أثناء الحذف');
-        }
+        if (res.success) onUpdateData();
+        else alert('حدث خطأ أثناء الحذف');
+    };
+
+    const handleExportExcel = () => {
+        if (generatedData.length === 0) return;
+        
+        const headers = ['الموظف', 'الفرع', 'الراتب الأساسي', 'قيمة الإضافي', 'حوافز', 'عمولات', 'مكافآت', 'خصم غياب', 'خصم سلف', 'صافي الراتب'];
+        
+        const rows = generatedData.map(p => {
+            const emp = employees.find(e => e.id === p.employeeId);
+            return [
+                `"${emp?.name || ''}"`,
+                emp?.branch === 'factory' ? 'مصنع' : 'مكتب',
+                p.basicSalary,
+                p.overtimeValue,
+                p.incentives,
+                p.commissions,
+                p.bonuses,
+                p.absentValue + p.penaltyValue,
+                p.loanDeduction,
+                p.netSalary
+            ].join(',');
+        });
+
+        const csvContent = "\uFEFF" + [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Payroll_${selectedMonth+1}_${selectedYear}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const getEmploymentLabel = (type?: EmploymentType) => {
@@ -219,7 +248,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     };
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 relative">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
@@ -430,30 +459,39 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             <thead className="bg-slate-50 dark:bg-slate-700/30 text-slate-500">
                                 <tr>
                                     <th className="p-3">الموظف</th>
-                                    <th className="p-3">إجمالي السلفة</th>
+                                    <th className="p-3">القيمة الكلية</th>
                                     <th className="p-3">تم سداد</th>
-                                    <th className="p-3">المتبقي (مرحل)</th>
+                                    <th className="p-3 w-1/3">التقدم</th>
                                     <th className="p-3">القسط</th>
-                                    <th className="p-3">الحالة</th>
                                     <th className="p-3 text-center">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                 {loans.length === 0 ? (
-                                    <tr><td colSpan={7} className="p-8 text-center text-slate-400">لا توجد سلف نشطة</td></tr>
+                                    <tr><td colSpan={6} className="p-8 text-center text-slate-400">لا توجد سلف نشطة</td></tr>
                                 ) : loans.map(loan => {
                                     const emp = employees.find(e => e.id === loan.employeeId);
                                     const remaining = loan.totalAmount - loan.paidAmount;
+                                    const progress = Math.min(100, Math.round((loan.paidAmount / loan.totalAmount) * 100));
+                                    
                                     return (
                                         <tr key={loan.id}>
                                             <td className="p-3 font-bold">{emp?.name}</td>
-                                            <td className="p-3">{loan.totalAmount}</td>
-                                            <td className="p-3 text-emerald-600">{loan.paidAmount}</td>
-                                            <td className="p-3 font-bold text-red-500">{remaining}</td>
-                                            <td className="p-3">{loan.installmentPerMonth}</td>
+                                            <td className="p-3">{loan.totalAmount.toLocaleString()}</td>
+                                            <td className="p-3 text-emerald-600">{loan.paidAmount.toLocaleString()}</td>
                                             <td className="p-3">
-                                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">نشط</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
+                                                            style={{ width: `${progress}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-slate-400">{progress}%</span>
+                                                </div>
+                                                <div className="text-[9px] text-slate-400 mt-1">متبقي: {remaining.toLocaleString()}</div>
                                             </td>
+                                            <td className="p-3 font-bold">{loan.installmentPerMonth}</td>
                                             <td className="p-3 text-center">
                                                 <button 
                                                     onClick={() => handleDeleteLoan(loan.id)}
@@ -475,21 +513,21 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {/* --- TAB: GENERATE PAYROLL --- */}
             {activeTab === 'generate' && (
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm flex items-center justify-between border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-4">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm flex flex-col md:flex-row items-center justify-between border border-slate-100 dark:border-slate-700 gap-4">
+                        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 p-2 rounded-xl">
                                 <Calendar className="text-emerald-500" />
                                 <select 
                                     value={selectedMonth} 
                                     onChange={e => setSelectedMonth(parseInt(e.target.value))}
-                                    className="bg-transparent font-bold outline-none"
+                                    className="bg-transparent font-bold outline-none cursor-pointer"
                                 >
                                     {[0,1,2,3,4,5,6,7,8,9,10,11].map(m => <option key={m} value={m}>{new Date(0, m).toLocaleDateString('ar-EG', {month: 'long'})}</option>)}
                                 </select>
                                 <select 
                                     value={selectedYear} 
                                     onChange={e => setSelectedYear(parseInt(e.target.value))}
-                                    className="bg-transparent font-bold outline-none"
+                                    className="bg-transparent font-bold outline-none cursor-pointer"
                                 >
                                     {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
                                 </select>
@@ -497,21 +535,30 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             <button 
                                 type="button"
                                 onClick={(e) => { e.preventDefault(); calculatePayroll(); }}
-                                className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all"
+                                className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all w-full md:w-auto"
                             >
                                 <Calculator size={18} className="inline ml-2" /> إعداد الكشف
                             </button>
                         </div>
+                        
                         {generatedData.length > 0 && (
-                            <button 
-                                type="button"
-                                onClick={(e) => { e.preventDefault(); handleSavePayroll(); }}
-                                disabled={processing}
-                                className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all flex items-center gap-2"
-                            >
-                                {processing ? <span className="animate-spin">⌛</span> : <Save size={20} />} 
-                                اعتماد وحفظ الرواتب
-                            </button>
+                            <div className="flex gap-2 w-full md:w-auto">
+                                <button 
+                                    onClick={handleExportExcel}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                                >
+                                    <Download size={18} /> تصدير Excel
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); handleSavePayroll(); }}
+                                    disabled={processing}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all"
+                                >
+                                    {processing ? <span className="animate-spin">⌛</span> : <Save size={20} />} 
+                                    اعتماد
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -531,6 +578,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <th className="p-4 text-center bg-yellow-50/50">مكافآت</th>
                                             <th className="p-4 text-center bg-red-50/50 font-bold text-red-600">خصم سلفة</th>
                                             <th className="p-4 text-center font-black text-base">الصافي</th>
+                                            <th className="p-4 text-center">قسيمة</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -613,6 +661,15 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                             {row.netSalary.toLocaleString()}
                                                         </span>
                                                     </td>
+                                                    <td className="p-4 text-center">
+                                                        <button 
+                                                            onClick={() => setSelectedPayslip(row)}
+                                                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                            title="عرض قسيمة الراتب"
+                                                        >
+                                                            <FileText size={16} />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             );
                                         })}
@@ -628,6 +685,125 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {activeTab === 'history' && (
                 <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm p-8 text-center text-slate-400">
                     <p>سجل الرواتب السابقة (قيد التطوير للعرض)</p>
+                </div>
+            )}
+
+            {/* --- PAYSLIP MODAL --- */}
+            {selectedPayslip && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedPayslip(null)}>
+                    <div className="bg-white rounded-[1.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in relative" onClick={e => e.stopPropagation()}>
+                        {/* Header Gradient */}
+                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-black mb-1">قسيمة راتب</h3>
+                                <p className="opacity-70 text-sm">شهر {new Date(0, selectedPayslip.month).toLocaleDateString('ar-EG', {month: 'long'})} {selectedPayslip.year}</p>
+                            </div>
+                            <div className="text-left">
+                                <div className="font-bold text-lg">Mowazeb PRO</div>
+                                <div className="text-[10px] opacity-60 tracking-widest uppercase">Payroll System</div>
+                            </div>
+                        </div>
+
+                        {/* Employee Info */}
+                        <div className="p-6 border-b border-slate-100">
+                            <div className="flex items-center gap-4">
+                                <img 
+                                    src={employees.find(e => e.id === selectedPayslip.employeeId)?.avatar} 
+                                    className="w-16 h-16 rounded-full border-4 border-slate-50 shadow-sm" 
+                                    alt="" 
+                                />
+                                <div>
+                                    <h4 className="text-xl font-bold text-slate-800">{employees.find(e => e.id === selectedPayslip.employeeId)?.name}</h4>
+                                    <div className="flex gap-2 text-sm text-slate-500 mt-1">
+                                        <span className="bg-slate-100 px-2 py-0.5 rounded text-xs">{employees.find(e => e.id === selectedPayslip.employeeId)?.position}</span>
+                                        <span className="bg-slate-100 px-2 py-0.5 rounded text-xs dir-ltr">ID: {selectedPayslip.employeeId.slice(0,6)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Financial Details */}
+                        <div className="p-6 grid grid-cols-2 gap-8">
+                            {/* Earnings */}
+                            <div className="space-y-3">
+                                <h5 className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-4 border-b border-emerald-100 pb-2">المستحقات</h5>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500">الراتب الأساسي</span>
+                                    <span className="font-bold">{selectedPayslip.basicSalary.toLocaleString()}</span>
+                                </div>
+                                {selectedPayslip.overtimeValue > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">عمل إضافي</span>
+                                        <span className="font-bold">{selectedPayslip.overtimeValue.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslip.incentives > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">حوافز</span>
+                                        <span className="font-bold">{selectedPayslip.incentives.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslip.commissions > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">عمولات</span>
+                                        <span className="font-bold">{selectedPayslip.commissions.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslip.bonuses > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">مكافآت</span>
+                                        <span className="font-bold">{selectedPayslip.bonuses.toLocaleString()}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Deductions */}
+                            <div className="space-y-3">
+                                <h5 className="text-xs font-black text-red-600 uppercase tracking-widest mb-4 border-b border-red-100 pb-2">الاستقطاعات</h5>
+                                {(selectedPayslip.absentValue + selectedPayslip.penaltyValue) > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">غياب وجزاءات</span>
+                                        <span className="font-bold text-red-600">{(selectedPayslip.absentValue + selectedPayslip.penaltyValue).toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslip.loanDeduction > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">سلف</span>
+                                        <span className="font-bold text-red-600">{selectedPayslip.loanDeduction.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslip.insurance > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">تأمينات</span>
+                                        <span className="font-bold text-red-600">{selectedPayslip.insurance.toLocaleString()}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Net Salary Footer */}
+                        <div className="bg-slate-50 p-6 flex justify-between items-center border-t border-slate-100">
+                            <div>
+                                <div className="text-xs text-slate-400 font-bold uppercase mb-1">صافي الراتب المستحق</div>
+                                <div className="text-3xl font-black text-slate-800">{selectedPayslip.netSalary.toLocaleString()} <span className="text-sm font-medium text-slate-400">ج.م</span></div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => window.print()} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
+                                    <Printer size={20} />
+                                </button>
+                                <button className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
+                                    <Share2 size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => setSelectedPayslip(null)}
+                            className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
