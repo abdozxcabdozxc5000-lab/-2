@@ -117,6 +117,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             let loanDeduction = 0;
             if (activeLoan) {
                 const remaining = activeLoan.totalAmount - activeLoan.paidAmount;
+                // Default to installment, but allow editing later
                 loanDeduction = Math.min(activeLoan.installmentPerMonth, remaining);
             }
 
@@ -175,6 +176,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 const loan = loans.find(l => l.employeeId === record.employeeId && l.status === 'active');
                 if (loan) {
                     const newPaid = loan.paidAmount + record.loanDeduction;
+                    // Check if fully paid (or slight overpayment due to manual entry)
                     const newStatus = newPaid >= loan.totalAmount ? 'completed' : 'active';
                     await upsertLoan({ ...loan, paidAmount: newPaid, status: newStatus });
                 }
@@ -505,6 +507,10 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             const hoursBase = branchConfig.payrollHoursBase || 8;
                                             const hourlyRate = row.basicSalary > 0 ? (row.basicSalary / daysBase / hoursBase) : 0;
 
+                                            // Get active loan to set max limit
+                                            const activeLoan = loans.find(l => l.employeeId === emp?.id && l.status === 'active');
+                                            const remainingLoan = activeLoan ? (activeLoan.totalAmount - activeLoan.paidAmount) : 0;
+
                                             return (
                                                 <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
                                                     <td className="p-5">
@@ -549,7 +555,24 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                         />
                                                     </td>
                                                     <td className="p-5 text-center font-bold text-red-500">
-                                                        {row.loanDeduction > 0 ? row.loanDeduction : '-'}
+                                                        {activeLoan ? (
+                                                            <div className="flex flex-col items-center">
+                                                                <input 
+                                                                    type="number" 
+                                                                    min="0"
+                                                                    max={remainingLoan}
+                                                                    value={row.loanDeduction} 
+                                                                    onChange={e => {
+                                                                        let val = parseFloat(e.target.value);
+                                                                        if (isNaN(val)) val = 0;
+                                                                        if (val > remainingLoan) val = remainingLoan;
+                                                                        handleUpdateRecord(idx, 'loanDeduction', val);
+                                                                    }}
+                                                                    className="w-20 p-1.5 border border-orange-200 rounded-lg text-center text-sm font-bold text-orange-600 outline-none focus:ring-2 focus:ring-orange-500 bg-orange-50 focus:bg-white transition-all"
+                                                                />
+                                                                <span className="text-[9px] text-slate-400 mt-1">متبقي: {remainingLoan}</span>
+                                                            </div>
+                                                        ) : '-'}
                                                     </td>
                                                     <td className="p-5 text-center">
                                                         <input 
@@ -905,7 +928,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
                                                     <td className="p-4 text-center font-mono text-green-600 font-bold">{row.overtimeValue.toLocaleString()}</td>
                                                     <td className="p-4 text-center text-purple-600">{(row.incentives + row.commissions + row.bonuses).toLocaleString()}</td>
-                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance).toLocaleString()}</td>
+                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.loanDeduction + row.insurance).toLocaleString()}</td>
                                                     <td className="p-4 text-center">
                                                         <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-sm">
                                                             {row.netSalary.toLocaleString()}
