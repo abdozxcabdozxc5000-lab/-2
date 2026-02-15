@@ -18,11 +18,9 @@ export const DEFAULT_RADIUS = 100;
 
 // Initial Config (Used for seeding)
 export const DEFAULT_CONFIG: AppConfig = {
-    gracePeriodMinutes: DEFAULT_GRACE_PERIOD,
     weightCommitment: WEIGHT_COMMITMENT,
     weightOvertime: WEIGHT_OVERTIME,
     weightAbsence: WEIGHT_ABSENCE,
-    penaltyValue: DEFAULT_PENALTY_VALUE,
     holidays: [],
     office: {
         workStartTime: WORK_START_TIME,
@@ -32,8 +30,10 @@ export const DEFAULT_CONFIG: AppConfig = {
         lng: DEFAULT_LNG,
         radius: DEFAULT_RADIUS,
         weekendDays: [5, 6], // Friday and Saturday
-        payrollDaysBase: 30, // Default base days
-        payrollHoursBase: 8  // Default base hours
+        payrollDaysBase: 30, 
+        payrollHoursBase: 8,
+        gracePeriodMinutes: 30, // Office Specific Default
+        penaltyValue: 0         // Office Specific Default
     },
     factory: {
         workStartTime: "08:00",
@@ -43,8 +43,10 @@ export const DEFAULT_CONFIG: AppConfig = {
         lng: DEFAULT_LNG,
         radius: 200,
         weekendDays: [5], // Friday only
-        payrollDaysBase: 30, // Default base days
-        payrollHoursBase: 9  // Default base hours
+        payrollDaysBase: 30, 
+        payrollHoursBase: 9,
+        gracePeriodMinutes: 15, // Factory Specific Default
+        penaltyValue: 1         // Factory Specific Default
     }
 };
 

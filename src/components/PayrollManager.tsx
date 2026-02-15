@@ -64,8 +64,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             });
 
             // 3. Overtime Calc
-            // Updated Rule: Use Configurable Base Days and Hours from Branch Settings
-            // Default to 30 days and 8 hours if config is missing to avoid NaN
             const branchConfig = (emp.branch === 'factory') ? config.factory : config.office;
             const daysBase = branchConfig.payrollDaysBase || 30;
             const hoursBase = branchConfig.payrollHoursBase || 8; 
@@ -81,7 +79,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
             // 4. Deductions
             const dayRate = basic / daysBase;
-            const penaltyValue = Math.round(unexcusedAbsences * dayRate * (config.penaltyValue || 1)); 
+            // --- UPDATED: Use Branch Specific Penalty Value ---
+            const penaltyVal = branchConfig.penaltyValue ?? (config.penaltyValue || 1);
+            const penaltyValue = Math.round(unexcusedAbsences * dayRate * penaltyVal); 
 
             // 5. Loans
             const activeLoan = loans.find(l => l.employeeId === emp.id && l.status === 'active');

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserRole, Holiday, BranchSettings } from '../types';
-import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign } from 'lucide-react';
+import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign, AlertTriangle } from 'lucide-react';
 import { Permissions } from '../utils';
 import { DEFAULT_CONFIG } from '../constants';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap } from 'react-leaflet';
@@ -200,43 +200,6 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
           )}
       </div>
 
-      {/* --- Global Settings (Grace Period & Penalty) --- */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-              <ShieldCheck className="text-indigo-500" size={20} /> إعدادات عامة (تطبق على الكل)
-          </h3>
-          <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1 p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800">
-                    <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-2">
-                        <Target size={18} />
-                        فترة السماح بالدقائق
-                    </label>
-                    <div className="flex items-center gap-4">
-                        <input 
-                            type="number" min="0" max="60"
-                            value={localConfig.gracePeriodMinutes || 0}
-                            onChange={e => setLocalConfig({...localConfig, gracePeriodMinutes: parseInt(e.target.value) || 0})}
-                            className="w-full p-3 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
-                        />
-                    </div>
-              </div>
-              <div className="flex-1 p-4 rounded-2xl bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800">
-                    <label className="block text-sm font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
-                        <X size={18} />
-                        جزاء الغياب (نقاط)
-                    </label>
-                    <div className="flex items-center gap-4">
-                        <input 
-                            type="number" min="0" max="50"
-                            value={localConfig.penaltyValue || 0}
-                            onChange={e => setLocalConfig({...localConfig, penaltyValue: parseInt(e.target.value) || 0})}
-                            className="w-full p-3 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
-                        />
-                    </div>
-              </div>
-          </div>
-      </div>
-
       {/* --- Branch Settings Tabs --- */}
       <div className="flex gap-4 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-2xl max-w-md">
           <button 
@@ -262,7 +225,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                     <Clock size={24} />
                 </div>
                 <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                    إعدادات الدوام والرواتب ({activeTab === 'office' ? 'المكتب' : 'المصنع'})
+                    إعدادات الدوام والجزاءات ({activeTab === 'office' ? 'المكتب' : 'المصنع'})
                 </h3>
             </div>
             
@@ -284,6 +247,32 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                             value={localConfig[activeTab].workEndTime}
                             onChange={e => updateBranchSettings(activeTab, { workEndTime: e.target.value })}
                             className="w-full p-4 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center text-lg"
+                        />
+                    </div>
+                </div>
+
+                {/* --- Grace Period & Penalty Config (Moved Here) --- */}
+                <div className="grid grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div>
+                        <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-1">
+                            <Target size={14} /> فترة السماح (دقائق)
+                        </label>
+                        <input 
+                            type="number" min="0" max="60"
+                            value={localConfig[activeTab].gracePeriodMinutes ?? 0}
+                            onChange={e => updateBranchSettings(activeTab, { gracePeriodMinutes: parseInt(e.target.value) || 0 })}
+                            className="w-full p-3 border border-indigo-100 rounded-xl outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white font-bold text-center text-indigo-600"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-1">
+                            <AlertTriangle size={14} /> جزاء الغياب (نقاط)
+                        </label>
+                        <input 
+                            type="number" min="0" max="50"
+                            value={localConfig[activeTab].penaltyValue ?? 0}
+                            onChange={e => updateBranchSettings(activeTab, { penaltyValue: parseInt(e.target.value) || 0 })}
+                            className="w-full p-3 border border-red-100 rounded-xl outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white font-bold text-center text-red-600"
                         />
                     </div>
                 </div>
