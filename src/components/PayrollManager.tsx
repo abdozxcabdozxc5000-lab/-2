@@ -555,9 +555,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     </td>
                                                     <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
                                                     
-                                                    {/* Hourly Rate Display */}
+                                                    {/* Hourly Rate Display - ONLY FOR FACTORY */}
                                                     <td className="p-4 text-center font-mono text-xs text-slate-500">
-                                                        {hourlyRate > 0 ? hourlyRate.toFixed(2) : '-'}
+                                                        {isFactory && hourlyRate > 0 ? hourlyRate.toFixed(2) : '-'}
                                                     </td>
 
                                                     {/* Overtime (Factory Only Logic Display) */}
