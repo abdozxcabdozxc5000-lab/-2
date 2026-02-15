@@ -1010,17 +1010,13 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
                             {/* --- PRINTABLE REPORT (HIDDEN ON SCREEN) --- */}
                             <div className="hidden print:block print:p-8 bg-white text-black print:absolute print:top-0 print:left-0 print:w-full print:z-[9999]">
-                                <div className="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
-                                    <div className="text-right">
-                                        <h1 className="text-2xl font-black mb-1">مسير رواتب شهر {new Date(0, historyView[0]?.month || 0).toLocaleDateString('ar-EG', {month: 'long'})} {historyView[0]?.year}</h1>
-                                        <p className="text-sm font-bold">تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
-                                    </div>
-                                    <div className="text-left">
-                                        <h2 className="text-xl font-black">مواظب PRO</h2>
-                                        <p className="text-xs font-bold uppercase tracking-widest">HR & Payroll System</p>
-                                    </div>
+                                {/* Simplified Header: Centered, No Branding, Just Context */}
+                                <div className="text-center border-b-2 border-black pb-4 mb-6">
+                                    <h1 className="text-3xl font-black mb-1">مسير رواتب شهر {new Date(0, historyView[0]?.month || 0).toLocaleDateString('ar-EG', {month: 'long'})} {historyView[0]?.year}</h1>
+                                    <p className="text-sm">تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
                                 </div>
 
+                                {/* Table without Signature Column */}
                                 <table className="w-full text-right text-[10px] border-collapse border border-black mb-8">
                                     <thead className="bg-gray-100 font-bold border-b border-black">
                                         <tr>
@@ -1032,7 +1028,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <th className="p-2 border border-black text-center">الحوافز والبدلات</th>
                                             <th className="p-2 border border-black text-center">إجمالي الاستقطاعات</th>
                                             <th className="p-2 border border-black text-center font-black text-sm">صافي الراتب</th>
-                                            <th className="p-2 border border-black w-24 text-center">التوقيع</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1052,7 +1047,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     <td className="p-2 border-r border-black text-center font-mono">{incentives.toLocaleString()}</td>
                                                     <td className="p-2 border-r border-black text-center font-mono text-red-600">{deductions.toLocaleString()}</td>
                                                     <td className="p-2 border-r border-black text-center font-black text-sm">{row.netSalary.toLocaleString()}</td>
-                                                    <td className="p-2 border-l border-black"></td>
                                                 </tr>
                                             );
                                         })}
@@ -1065,25 +1059,10 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + (r.incentives + r.commissions + r.bonuses), 0).toLocaleString()}</td>
                                             <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + (r.absentValue + r.penaltyValue + r.deductions + r.loanDeduction + r.insurance), 0).toLocaleString()}</td>
                                             <td className="p-2 text-center border-r border-black text-lg">{historyView.reduce((acc, r) => acc + r.netSalary, 0).toLocaleString()}</td>
-                                            <td className="p-2"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
-
-                                <div className="flex justify-between mt-12 px-8">
-                                    <div className="text-center">
-                                        <p className="font-bold mb-8">المحاسب</p>
-                                        <p>___________________</p>
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="font-bold mb-8">مدير الموارد البشرية</p>
-                                        <p>___________________</p>
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="font-bold mb-8">اعتماد المدير العام</p>
-                                        <p>___________________</p>
-                                    </div>
-                                </div>
+                                {/* Signature Block Removed */}
                             </div>
                         </>
                     ) : (
