@@ -97,7 +97,6 @@ export const downloadAllData = async () => {
         if (empRes.error) return { success: false, message: empRes.error.message };
         
         // 1. MAPPING EMPLOYEES: Map database columns (snake_case) to App Types (camelCase)
-        // Checks both snake_case and camelCase to be robust against different DB states
         const employees = (empRes.data || []).map((e: any) => ({
             ...e,
             basicSalary: e.basic_salary ?? e.basicSalary ?? 0,        
@@ -218,6 +217,13 @@ export const upsertLoan = async (loan: Loan) => {
     return { success: !error, error };
 };
 
+export const deleteLoan = async (id: string) => {
+    if (!supabase) initSupabase();
+    if (!supabase) return { success: false };
+    const { error } = await supabase.from('loans').delete().eq('id', id);
+    return { success: !error, error };
+};
+
 export const upsertPayroll = async (payroll: PayrollRecord) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false };
@@ -233,7 +239,6 @@ export const uploadAllData = async (employees: Employee[], records: AttendanceRe
     if (!supabase) return { success: false, message: 'Not connected' };
     
     // Bulk upload logic (simplified for brevity)
-    // In a real scenario, map fields correctly including basic_salary
     return { success: true };
 };
 

@@ -2,11 +2,11 @@
 import React, { useState, useMemo } from 'react';
 import { Employee, AttendanceRecord, PayrollRecord, Loan, AppConfig, EmploymentType } from '../types';
 import { calculateDailyStats, minutesToTime } from '../utils';
-import { upsertPayroll, upsertLoan, upsertSingleEmployee } from '../supabaseClient';
+import { upsertPayroll, upsertLoan, upsertSingleEmployee, deleteLoan } from '../supabaseClient';
 import { DEFAULT_PENALTY_VALUE } from '../constants';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
-    TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown
+    TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown, Trash2
 } from 'lucide-react';
 
 interface PayrollManagerProps {
@@ -196,6 +196,16 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         setNewLoan({ empId: '', total: 0, installment: 0 });
         alert('تم إضافة السلفة بنجاح');
         onUpdateData();
+    };
+
+    const handleDeleteLoan = async (id: string) => {
+        if (!confirm('هل أنت متأكد من حذف هذه السلفة نهائياً؟')) return;
+        const res = await deleteLoan(id);
+        if (res.success) {
+            onUpdateData();
+        } else {
+            alert('حدث خطأ أثناء الحذف');
+        }
     };
 
     const getEmploymentLabel = (type?: EmploymentType) => {
@@ -425,11 +435,12 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                     <th className="p-3">المتبقي (مرحل)</th>
                                     <th className="p-3">القسط</th>
                                     <th className="p-3">الحالة</th>
+                                    <th className="p-3 text-center">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                 {loans.length === 0 ? (
-                                    <tr><td colSpan={6} className="p-8 text-center text-slate-400">لا توجد سلف نشطة</td></tr>
+                                    <tr><td colSpan={7} className="p-8 text-center text-slate-400">لا توجد سلف نشطة</td></tr>
                                 ) : loans.map(loan => {
                                     const emp = employees.find(e => e.id === loan.employeeId);
                                     const remaining = loan.totalAmount - loan.paidAmount;
@@ -442,6 +453,15 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <td className="p-3">{loan.installmentPerMonth}</td>
                                             <td className="p-3">
                                                 <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">نشط</span>
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <button 
+                                                    onClick={() => handleDeleteLoan(loan.id)}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="حذف السلفة"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </td>
                                         </tr>
                                     );
