@@ -7,7 +7,7 @@ import { DEFAULT_PENALTY_VALUE } from '../constants';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
     TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown, Trash2,
-    FileText, Download, X, Share2, CreditCard, ChevronLeft, ChevronRight, MoreHorizontal, Filter, Plus
+    FileText, Download, X, Share2, CreditCard, ChevronLeft, ChevronRight, MoreHorizontal, Filter, Plus, Eye
 } from 'lucide-react';
 
 interface PayrollManagerProps {
@@ -39,6 +39,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     // --- GENERATE STATE ---
     const [generatedData, setGeneratedData] = useState<PayrollRecord[]>([]);
     
+    // --- HISTORY STATE ---
+    const [historyView, setHistoryView] = useState<PayrollRecord[] | null>(null);
+    
     // --- PAYSLIP MODAL STATE ---
     const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
 
@@ -48,7 +51,24 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     // --- STATS CALCULATION FOR HEADER ---
     const totalPayrollValue = generatedData.reduce((acc, curr) => acc + curr.netSalary, 0);
     const totalLoansValue = loans.reduce((acc, curr) => acc + (curr.totalAmount - curr.paidAmount), 0);
-    const employeesCount = generatedData.length > 0 ? generatedData.length : employees.length;
+    
+    // --- GROUP HISTORY DATA ---
+    const historyGroups = useMemo(() => {
+        const groups: { [key: string]: PayrollRecord[] } = {};
+        payrolls.forEach(p => {
+            const key = `${p.year}-${p.month}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(p);
+        });
+        return Object.entries(groups).map(([key, records]) => {
+            const [year, month] = key.split('-').map(Number);
+            const totalAmount = records.reduce((sum, r) => sum + r.netSalary, 0);
+            return { key, year, month, records, totalAmount, count: records.length };
+        }).sort((a, b) => {
+            if (b.year !== a.year) return b.year - a.year;
+            return b.month - a.month;
+        });
+    }, [payrolls]);
 
     // --- LOGIC: Calculate Salary ---
     const calculatePayroll = () => {
@@ -143,7 +163,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     };
 
     const handleSavePayroll = async () => {
-        if (!confirm('هل أنت متأكد من اعتماد الرواتب؟ سيتم تحديث أرصدة السلف.')) return;
+        if (!confirm('هل أنت متأكد من اعتماد الرواتب؟ سيتم تحديث أرصدة السلف وحفظ السجل في الأرشيف.')) return;
         setProcessing(true);
         
         for (const record of generatedData) {
@@ -161,8 +181,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         
         setProcessing(false);
         alert('تم حفظ الرواتب وترحيل السلف بنجاح!');
-        onUpdateData();
-        setActiveTab('history');
+        onUpdateData(); // Reload data from cloud to update history
+        setGeneratedData([]); // Clear current generation
+        setActiveTab('history'); // Go to history
     };
 
     // --- SETUP HANDLERS ---
@@ -210,12 +231,12 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         else alert('حدث خطأ أثناء الحذف');
     };
 
-    const handleExportExcel = () => {
-        if (generatedData.length === 0) return;
+    const handleExportExcel = (data: PayrollRecord[]) => {
+        if (data.length === 0) return;
         
         const headers = ['الموظف', 'الفرع', 'الراتب الأساسي', 'قيمة الإضافي', 'حوافز', 'عمولات', 'مكافآت', 'خصم غياب', 'خصم سلف', 'صافي الراتب'];
         
-        const rows = generatedData.map(p => {
+        const rows = data.map(p => {
             const emp = employees.find(e => e.id === p.employeeId);
             return [
                 `"${emp?.name || ''}"`,
@@ -236,7 +257,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `Payroll_${selectedMonth+1}_${selectedYear}.csv`);
+        link.setAttribute('download', `Payroll_Report.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -767,6 +788,121 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             عرض 1 إلى {loans.length} من {loans.length} سجل
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* --- TAB: HISTORY (ARCHIVE) --- */}
+            {activeTab === 'history' && (
+                <div className="space-y-6">
+                    {historyView ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700 animate-slide-in-right">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setHistoryView(null)} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                                        <ArrowLeft size={20} />
+                                    </button>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-800 dark:text-white">تفاصيل الرواتب المؤرشفة</h3>
+                                        <p className="text-sm text-slate-500">عرض للقراءة فقط</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => handleExportExcel(historyView)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 rounded-xl text-slate-600 dark:text-slate-200 text-sm font-bold shadow-sm hover:shadow transition-all"
+                                >
+                                    <Download size={16} /> تحميل Excel
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-right text-xs">
+                                    <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-600 font-bold uppercase">
+                                        <tr>
+                                            <th className="p-4 min-w-[150px]">الموظف</th>
+                                            <th className="p-4 text-center">الأساسي</th>
+                                            <th className="p-4 text-center bg-green-50/50 dark:bg-green-900/10">ق.إضافي</th>
+                                            <th className="p-4 text-center bg-purple-50/50 dark:bg-purple-900/10">حوافز وعمولات</th>
+                                            <th className="p-4 text-center bg-red-50/50 dark:bg-red-900/10">خصومات</th>
+                                            <th className="p-4 text-center font-black text-base">الصافي</th>
+                                            <th className="p-4 text-center">الحالة</th>
+                                            <th className="p-4 text-center">قسيمة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                        {historyView.map((row) => {
+                                            const emp = employees.find(e => e.id === row.employeeId);
+                                            return (
+                                                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
+                                                    <td className="p-4 font-bold flex flex-col">
+                                                        <span className="text-sm">{emp?.name}</span>
+                                                        <span className="text-[10px] text-slate-400">{getEmploymentLabel(emp?.employmentType)}</span>
+                                                    </td>
+                                                    <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
+                                                    <td className="p-4 text-center font-mono text-green-600 font-bold">{row.overtimeValue.toLocaleString()}</td>
+                                                    <td className="p-4 text-center text-purple-600">{(row.incentives + row.commissions + row.bonuses).toLocaleString()}</td>
+                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.loanDeduction + row.insurance).toLocaleString()}</td>
+                                                    <td className="p-4 text-center">
+                                                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-sm">
+                                                            {row.netSalary.toLocaleString()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold">مدفوع</span>
+                                                    </td>
+                                                    <td className="p-4 text-center">
+                                                        <button 
+                                                            onClick={() => setSelectedPayslip(row)}
+                                                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                        >
+                                                            <FileText size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {historyGroups.length === 0 ? (
+                                <div className="col-span-full py-20 text-center text-slate-400">
+                                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                                    <p>لا توجد سجلات رواتب مؤرشفة حتى الآن.</p>
+                                </div>
+                            ) : historyGroups.map((group) => (
+                                <div key={group.key} onClick={() => setHistoryView(group.records)} className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center font-bold text-xl">
+                                                {group.month + 1}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-lg text-slate-800 dark:text-white">رواتب شهر {new Date(0, group.month).toLocaleDateString('ar-EG', {month: 'long'})}</h4>
+                                                <p className="text-slate-400 text-xs font-mono">{group.year}</p>
+                                            </div>
+                                        </div>
+                                        <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-400 group-hover:text-emerald-500 transition-colors">
+                                            <Eye size={20} />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <p className="text-xs text-slate-500 mb-1">إجمالي المصروف</p>
+                                            <p className="text-2xl font-black text-slate-800 dark:text-white">{group.totalAmount.toLocaleString()} <span className="text-xs font-medium text-slate-400">ج.م</span></p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-slate-500 mb-1">الموظفين</p>
+                                            <div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">
+                                                <Users size={14} /> {group.count}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
