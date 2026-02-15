@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Employee, AttendanceRecord, PayrollRecord, Loan, AppConfig, EmploymentType } from '../types';
 import { calculateDailyStats, minutesToTime } from '../utils';
 import { upsertPayroll, upsertLoan, upsertSingleEmployee } from '../supabaseClient';
+import { DEFAULT_PENALTY_VALUE } from '../constants';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
     TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown
@@ -80,7 +81,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             // 4. Deductions
             const dayRate = basic / daysBase;
             // --- UPDATED: Use Branch Specific Penalty Value ---
-            const penaltyVal = branchConfig.penaltyValue ?? (config.penaltyValue || 1);
+            const penaltyVal = branchConfig.penaltyValue ?? DEFAULT_PENALTY_VALUE;
             const penaltyValue = Math.round(unexcusedAbsences * dayRate * penaltyVal); 
 
             // 5. Loans
