@@ -31,7 +31,9 @@ export const DEFAULT_CONFIG: AppConfig = {
         lat: DEFAULT_LAT,
         lng: DEFAULT_LNG,
         radius: DEFAULT_RADIUS,
-        weekendDays: [5, 6] // Friday and Saturday
+        weekendDays: [5, 6], // Friday and Saturday
+        payrollDaysBase: 30, // Default base days
+        payrollHoursBase: 8  // Default base hours
     },
     factory: {
         workStartTime: "08:00",
@@ -40,7 +42,9 @@ export const DEFAULT_CONFIG: AppConfig = {
         lat: DEFAULT_LAT,
         lng: DEFAULT_LNG,
         radius: 200,
-        weekendDays: [5] // Friday only
+        weekendDays: [5], // Friday only
+        payrollDaysBase: 30, // Default base days
+        payrollHoursBase: 9  // Default base hours
     }
 };
 

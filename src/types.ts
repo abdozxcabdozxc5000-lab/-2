@@ -126,7 +126,10 @@ export interface BranchSettings {
     lat: number;
     lng: number;
     radius: number;
-    weekendDays: number[]; 
+    weekendDays: number[];
+    // Payroll Config
+    payrollDaysBase?: number; // e.g. 30, 26
+    payrollHoursBase?: number; // e.g. 8, 9 
 }
 
 export interface AppConfig {

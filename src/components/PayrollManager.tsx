@@ -64,18 +64,23 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             });
 
             // 3. Overtime Calc
-            // Updated Rule: Divide by 30 days, then by 9 hours
-            const hourlyRate = basic > 0 ? (basic / 30 / 9) : 0;
+            // Updated Rule: Use Configurable Base Days and Hours from Branch Settings
+            // Default to 30 days and 8 hours if config is missing to avoid NaN
+            const branchConfig = (emp.branch === 'factory') ? config.factory : config.office;
+            const daysBase = branchConfig.payrollDaysBase || 30;
+            const hoursBase = branchConfig.payrollHoursBase || 8; 
+
+            const hourlyRate = basic > 0 ? (basic / daysBase / hoursBase) : 0;
             let overtimeValue = 0;
             
             if (type === 'factory') {
                 const overtimeHours = totalOvertimeMinutes / 60;
-                // Updated Rule: Multiplier is 1.0 (Hour for an Hour)
+                // Multiplier is 1.0 (Hour for an Hour) as per user request
                 overtimeValue = Math.round(overtimeHours * hourlyRate * 1); 
             }
 
             // 4. Deductions
-            const dayRate = basic / 30;
+            const dayRate = basic / daysBase;
             const penaltyValue = Math.round(unexcusedAbsences * dayRate * (config.penaltyValue || 1)); 
 
             // 5. Loans
@@ -497,6 +502,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                         <tr>
                                             <th className="p-4 min-w-[150px]">الموظف</th>
                                             <th className="p-4 text-center">الأساسي</th>
+                                            <th className="p-4 text-center bg-slate-100 dark:bg-slate-800 text-slate-500">سعر الساعة</th>
                                             <th className="p-4 text-center bg-green-50/50">س.إضافي</th>
                                             <th className="p-4 text-center bg-green-50/50">ق.إضافي</th>
                                             {isQuarterlyMonth && <th className="p-4 text-center bg-blue-50/50 text-blue-700">حافز ربع سنوي</th>}
@@ -513,6 +519,12 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             const isFactory = emp?.employmentType === 'factory';
                                             const isOffice = emp?.employmentType === 'office';
                                             const isSales = emp?.employmentType === 'sales';
+                                            
+                                            // Get Configuration Used for Calc
+                                            const branchConfig = (emp?.branch === 'factory') ? config.factory : config.office;
+                                            const daysBase = branchConfig.payrollDaysBase || 30;
+                                            const hoursBase = branchConfig.payrollHoursBase || 8;
+                                            const hourlyRate = row.basicSalary > 0 ? (row.basicSalary / daysBase / hoursBase) : 0;
 
                                             return (
                                                 <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
@@ -522,6 +534,11 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     </td>
                                                     <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
                                                     
+                                                    {/* Hourly Rate Display */}
+                                                    <td className="p-4 text-center font-mono text-xs text-slate-500">
+                                                        {hourlyRate > 0 ? hourlyRate.toFixed(2) : '-'}
+                                                    </td>
+
                                                     {/* Overtime (Factory Only Logic Display) */}
                                                     <td className="p-4 text-center text-slate-500">
                                                         {isFactory ? row.overtimeHours.toFixed(1) : '-'}

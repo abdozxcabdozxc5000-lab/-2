@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserRole, Holiday, BranchSettings } from '../types';
-import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign } from 'lucide-react';
 import { Permissions } from '../utils';
 import { DEFAULT_CONFIG } from '../constants';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap } from 'react-leaflet';
@@ -254,8 +254,94 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* --- Work Time & Payroll Configuration --- */}
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 transition-all animate-fade-in order-2 lg:order-1">
+            <div className="flex items-center gap-3 mb-8">
+                <div className={`p-3 rounded-2xl ${activeTab === 'office' ? 'bg-blue-50 text-blue-500' : 'bg-amber-50 text-amber-500'}`}>
+                    <Clock size={24} />
+                </div>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-white">
+                    إعدادات الدوام والرواتب ({activeTab === 'office' ? 'المكتب' : 'المصنع'})
+                </h3>
+            </div>
+            
+            <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت البدء</label>
+                        <input 
+                            type="time" 
+                            value={localConfig[activeTab].workStartTime}
+                            onChange={e => updateBranchSettings(activeTab, { workStartTime: e.target.value })}
+                            className="w-full p-4 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center text-lg"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت الانتهاء</label>
+                        <input 
+                            type="time" 
+                            value={localConfig[activeTab].workEndTime}
+                            onChange={e => updateBranchSettings(activeTab, { workEndTime: e.target.value })}
+                            className="w-full p-4 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center text-lg"
+                        />
+                    </div>
+                </div>
+
+                {/* --- Payroll Configuration Inputs --- */}
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                    <h4 className="flex items-center gap-2 text-sm font-black text-emerald-700 dark:text-emerald-400 mb-4 border-b border-emerald-100 dark:border-emerald-800/30 pb-2">
+                        <DollarSign size={16} /> معادلة حساب سعر الساعة (للمرتبات)
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">عدد أيام العمل (القسمة على)</label>
+                            <input 
+                                type="number"
+                                min="1" max="31"
+                                value={localConfig[activeTab].payrollDaysBase || 30}
+                                onChange={e => updateBranchSettings(activeTab, { payrollDaysBase: parseInt(e.target.value) || 30 })}
+                                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500/50 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
+                            />
+                            <p className="text-[9px] text-slate-400 mt-1">المعتاد: 30 أو 26 يوم</p>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">ساعات العمل اليومية (القسمة على)</label>
+                            <input 
+                                type="number"
+                                min="1" max="24"
+                                value={localConfig[activeTab].payrollHoursBase || 8}
+                                onChange={e => updateBranchSettings(activeTab, { payrollHoursBase: parseInt(e.target.value) || 8 })}
+                                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500/50 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
+                            />
+                            <p className="text-[9px] text-slate-400 mt-1">المعتاد: 8 أو 9 ساعات</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">أيام الإجازة الأسبوعية</label>
+                     <div className="flex flex-wrap gap-2">
+                        {daysOfWeek.map(day => (
+                            <button
+                                key={day.id}
+                                onClick={() => toggleWeekendDay(activeTab, day.id)}
+                                className={`px-3 py-2 rounded-lg text-sm font-bold border transition-all ${
+                                    (localConfig[activeTab].weekendDays || []).includes(day.id)
+                                    ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400'
+                                    : 'bg-white border-slate-200 text-slate-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400'
+                                }`}
+                            >
+                                {day.label}
+                            </button>
+                        ))}
+                     </div>
+                </div>
+            </div>
+        </div>
+
         {/* --- Location Settings for Active Branch --- */}
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 transition-all animate-fade-in">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 transition-all animate-fade-in order-1 lg:order-2">
             <div className="flex items-center gap-3 mb-8">
                 <div className={`p-3 rounded-2xl ${activeTab === 'office' ? 'bg-blue-50 text-blue-500' : 'bg-amber-50 text-amber-500'}`}>
                     <MapPin size={24} />
@@ -352,13 +438,11 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     />
-                                    {/* Visual Circle for Radius */}
                                     <Circle 
                                         center={[currentLat, currentLng]}
                                         pathOptions={{ fillColor: activeTab === 'office' ? 'blue' : 'orange', color: activeTab === 'office' ? 'blue' : 'orange', fillOpacity: 0.2 }}
                                         radius={currentRadius}
                                     />
-                                    {/* Center Point Marker */}
                                     <Circle 
                                         center={[currentLat, currentLng]}
                                         pathOptions={{ fillColor: 'red', color: 'white', weight: 2, fillOpacity: 1 }}
@@ -404,60 +488,6 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                          </div>
                     </div>
                  )}
-            </div>
-        </div>
-
-        {/* --- Work Time & Weekends for Active Branch --- */}
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 transition-all animate-fade-in">
-            <div className="flex items-center gap-3 mb-8">
-                <div className={`p-3 rounded-2xl ${activeTab === 'office' ? 'bg-blue-50 text-blue-500' : 'bg-amber-50 text-amber-500'}`}>
-                    <Clock size={24} />
-                </div>
-                <h3 className="font-bold text-lg text-slate-800 dark:text-white">
-                    مواعيد العمل والإجازات ({activeTab === 'office' ? 'المكتب' : 'المصنع'})
-                </h3>
-            </div>
-            
-            <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت البدء</label>
-                        <input 
-                            type="time" 
-                            value={localConfig[activeTab].workStartTime}
-                            onChange={e => updateBranchSettings(activeTab, { workStartTime: e.target.value })}
-                            className="w-full p-4 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center text-lg"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت الانتهاء</label>
-                        <input 
-                            type="time" 
-                            value={localConfig[activeTab].workEndTime}
-                            onChange={e => updateBranchSettings(activeTab, { workEndTime: e.target.value })}
-                            className="w-full p-4 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center text-lg"
-                        />
-                    </div>
-                </div>
-                
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">أيام الإجازة الأسبوعية</label>
-                     <div className="flex flex-wrap gap-2">
-                        {daysOfWeek.map(day => (
-                            <button
-                                key={day.id}
-                                onClick={() => toggleWeekendDay(activeTab, day.id)}
-                                className={`px-3 py-2 rounded-lg text-sm font-bold border transition-all ${
-                                    (localConfig[activeTab].weekendDays || []).includes(day.id)
-                                    ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400'
-                                    : 'bg-white border-slate-200 text-slate-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-400'
-                                }`}
-                            >
-                                {day.label}
-                            </button>
-                        ))}
-                     </div>
-                </div>
             </div>
         </div>
       </div>
