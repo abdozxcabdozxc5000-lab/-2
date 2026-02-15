@@ -21,7 +21,7 @@ interface PayrollManagerProps {
     onExit: () => void;
 }
 
-const ITEMS_PER_PAGE = 20; // عدد العناصر في الصفحة الواحدة
+const ITEMS_PER_PAGE = 20;
 
 const PayrollManager: React.FC<PayrollManagerProps> = ({ 
     employees, attendanceRecords, loans, payrolls, config, onUpdateData, onExit 
@@ -31,8 +31,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [searchQuery, setSearchQuery] = useState('');
     const [processing, setProcessing] = useState(false);
-    
-    // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
 
     // --- SETUP STATE ---
@@ -51,19 +49,13 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     // --- PAYSLIP MODAL STATE ---
     const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
 
-    // Reset pagination when tab or search changes
     useEffect(() => {
         setCurrentPage(1);
     }, [activeTab, searchQuery]);
 
-    // Helper: Is Quarterly Month? (Mar=2, Jun=5, Sep=8, Dec=11)
-    const isQuarterlyMonth = (selectedMonth + 1) % 3 === 0;
-
-    // --- STATS CALCULATION FOR HEADER ---
     const totalPayrollValue = generatedData.reduce((acc, curr) => acc + curr.netSalary, 0);
     const totalLoansValue = loans.reduce((acc, curr) => acc + (curr.totalAmount - curr.paidAmount), 0);
     
-    // --- GROUP HISTORY DATA ---
     const historyGroups = useMemo(() => {
         const groups: { [key: string]: PayrollRecord[] } = {};
         payrolls.forEach(p => {
@@ -81,7 +73,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         });
     }, [payrolls]);
 
-    // --- LOGIC: Calculate Salary ---
     const calculatePayroll = () => {
         const records = attendanceRecords.filter(r => {
             const d = new Date(r.date);
@@ -89,11 +80,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         });
 
         const payrolls: PayrollRecord[] = employees.map(emp => {
-            // 1. Basic Setup
             const basic = emp.basicSalary || 0;
             const type = emp.employmentType || 'office';
             
-            // 2. Attendance Stats
             const empRecords = records.filter(r => r.employeeId === emp.id);
             let totalOvertimeMinutes = 0;
             let unexcusedAbsences = 0;
@@ -104,7 +93,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 if (r.status === 'absent_penalty') unexcusedAbsences++;
             });
 
-            // 3. Overtime Calc
             const branchConfig = (emp.branch === 'factory') ? config.factory : config.office;
             const daysBase = branchConfig.payrollDaysBase || 30;
             const hoursBase = branchConfig.payrollHoursBase || 8; 
@@ -117,13 +105,9 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 overtimeValue = Math.round(overtimeHours * hourlyRate * 1); 
             }
 
-            // 4. Deductions (DISABLED AUTOMATIC CALCULATION PER REQUEST)
-            // User requested to handle all deductions manually in the 'deductions' field.
-            // Absent value and penalty value are forced to 0.
             const absentValue = 0;
             const penaltyValue = 0;
 
-            // 5. Loans
             const activeLoan = loans.find(l => l.employeeId === emp.id && l.status === 'active');
             let loanDeduction = 0;
             if (activeLoan) {
@@ -131,7 +115,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 loanDeduction = Math.min(activeLoan.installmentPerMonth, remaining);
             }
 
-            // 6. Init Record
             return {
                 id: `${emp.id}-${selectedYear}-${selectedMonth}`,
                 employeeId: emp.id,
@@ -146,7 +129,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 absentDays: unexcusedAbsences,
                 absentValue: absentValue,
                 penaltyValue: penaltyValue,
-                deductions: 0, // Default manual deductions
+                deductions: 0,
                 loanDeduction: loanDeduction,
                 insurance: 0,
                 netSalary: 0, 
@@ -155,23 +138,20 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             };
         });
 
-        // Final Net Calculation
         const finalPayrolls = payrolls.map(p => ({
             ...p,
             netSalary: (p.basicSalary + p.overtimeValue + p.incentives + p.commissions + p.bonuses) - (p.absentValue + p.penaltyValue + p.deductions + p.loanDeduction + p.insurance)
         }));
 
         setGeneratedData(finalPayrolls);
-        setCurrentPage(1); // Reset to first page on new calculation
+        setCurrentPage(1);
     };
 
-    // Updated to use ID instead of Index for safety with pagination
     const handleUpdateRecord = (id: string, field: keyof PayrollRecord, value: number) => {
         setGeneratedData(prevData => {
             const updatedData = prevData.map(record => {
                 if (record.id === id) {
                     const updatedRecord = { ...record, [field]: value };
-                    // Recalculate Net
                     updatedRecord.netSalary = (updatedRecord.basicSalary + updatedRecord.overtimeValue + updatedRecord.incentives + updatedRecord.commissions + updatedRecord.bonuses) - (updatedRecord.absentValue + updatedRecord.penaltyValue + updatedRecord.deductions + updatedRecord.loanDeduction + updatedRecord.insurance);
                     return updatedRecord;
                 }
@@ -217,7 +197,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         }
     };
 
-    // --- SETUP HANDLERS ---
     const saveEmployeeSetup = async (id: string) => {
         const emp = employees.find(e => e.id === id);
         if (emp) {
@@ -235,7 +214,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         }
     };
 
-    // --- LOAN HANDLERS ---
     const handleAddLoan = async () => {
         if (!newLoan.empId || newLoan.total <= 0) return;
         
@@ -326,9 +304,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         }
     };
 
-    // --- RENDER HELPERS ---
-    
-    // 1. Prepare GENERATE Data
     const filteredPayroll = useMemo(() => {
         return generatedData.filter(row => {
             const empName = employees.find(e => e.id === row.employeeId)?.name || '';
@@ -340,7 +315,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         return filteredPayroll.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredPayroll, currentPage]);
 
-    // 2. Prepare SETUP Data
     const filteredEmployees = useMemo(() => {
         return employees.filter(e => e.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [employees, searchQuery]);
@@ -349,7 +323,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         return filteredEmployees.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     }, [filteredEmployees, currentPage]);
 
-    // 3. Prepare LOANS Data
     const filteredLoans = useMemo(() => {
         return loans.filter(l => {
             const name = employees.find(e => e.id === l.employeeId)?.name || '';
@@ -403,49 +376,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 </div>
             </div>
 
-            {/* Stats Cards (Only Visible in Generate Tab) */}
-            {activeTab === 'generate' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:translate-y-[-2px] transition-all">
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl">
-                            <Banknote size={24} />
-                        </div>
-                        <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">إجمالي الرواتب</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-white">{totalPayrollValue.toLocaleString()} <span className="text-xs text-slate-400">ج.م</span></h3>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:translate-y-[-2px] transition-all">
-                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-2xl">
-                            <Users size={24} />
-                        </div>
-                        <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">الموظفين المعالجين</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-white">{generatedData.length} <span className="text-sm text-slate-400">/ {employees.length}</span></h3>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:translate-y-[-2px] transition-all">
-                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl">
-                            <Wallet size={24} />
-                        </div>
-                        <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">إجمالي السلف</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-white">{totalLoansValue.toLocaleString()} <span className="text-xs text-slate-400">ج.م</span></h3>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:translate-y-[-2px] transition-all">
-                        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl">
-                            <Calendar size={24} />
-                        </div>
-                        <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">تاريخ الاستحقاق</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-white">28 {new Date(0, selectedMonth).toLocaleDateString('ar-EG', {month: 'long'})}</h3>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* --- TAB CONTENT AREA --- */}
+            {/* TAB CONTENT AREA */}
             
             {/* 1. GENERATE PAYROLL TAB */}
             {activeTab === 'generate' && (
@@ -527,13 +458,11 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             const emp = employees.find(e => e.id === row.employeeId);
                                             const isFactory = emp?.employmentType === 'factory';
                                             
-                                            // Get Configuration Used for Calc
                                             const branchConfig = (emp?.branch === 'factory') ? config.factory : config.office;
                                             const daysBase = branchConfig.payrollDaysBase || 30;
                                             const hoursBase = branchConfig.payrollHoursBase || 8;
                                             const hourlyRate = row.basicSalary > 0 ? (row.basicSalary / daysBase / hoursBase) : 0;
 
-                                            // Get active loan to set max limit
                                             const activeLoan = loans.find(l => l.employeeId === emp?.id && l.status === 'active');
                                             const remainingLoan = activeLoan ? (activeLoan.totalAmount - activeLoan.paidAmount) : 0;
 
@@ -626,30 +555,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                     </tbody>
                                 </table>
                             </div>
-                            
-                            {/* Conditional Pagination Footer */}
-                            {filteredPayroll.length > ITEMS_PER_PAGE && (
-                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm text-slate-500">
-                                    <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredPayroll.length)} من {filteredPayroll.length} نتيجة</div>
-                                    <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            disabled={currentPage === 1}
-                                            className="px-3 py-1 bg-white border rounded hover:bg-slate-50 disabled:opacity-50"
-                                        >
-                                            السابق
-                                        </button>
-                                        <span className="px-3 py-1 bg-blue-600 text-white rounded font-bold">{currentPage}</span>
-                                        <button 
-                                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredPayroll.length / ITEMS_PER_PAGE), p + 1))}
-                                            disabled={currentPage * ITEMS_PER_PAGE >= filteredPayroll.length}
-                                            className="px-3 py-1 bg-white border rounded hover:bg-slate-50 disabled:opacity-50"
-                                        >
-                                            التالي
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
@@ -771,18 +676,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             ))}
                         </tbody>
                     </table>
-                    
-                    {/* Conditional Pagination Footer */}
-                    {filteredEmployees.length > ITEMS_PER_PAGE && (
-                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-sm text-slate-500">
-                            <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredEmployees.length)} من {filteredEmployees.length} موظف</div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 rounded hover:bg-white"><ChevronRight size={16} /></button>
-                                <span className="px-3 py-0.5 bg-emerald-500 text-white rounded text-xs font-bold">{currentPage}</span>
-                                <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE), p + 1))} disabled={currentPage * ITEMS_PER_PAGE >= filteredEmployees.length} className="p-1 rounded hover:bg-white"><ChevronLeft size={16} /></button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -912,17 +805,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </tbody>
                             </table>
                         </div>
-                        {/* Conditional Pagination Footer */}
-                        {filteredLoans.length > ITEMS_PER_PAGE && (
-                            <div className="bg-slate-50 p-3 text-center text-xs text-slate-400 border-t border-slate-100 flex justify-between items-center px-4 print:hidden">
-                                <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredLoans.length)} من {filteredLoans.length} سجل</div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 border rounded bg-white">السابق</button>
-                                    <span className="px-2 py-1">{currentPage}</span>
-                                    <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredLoans.length / ITEMS_PER_PAGE), p + 1))} disabled={currentPage * ITEMS_PER_PAGE >= filteredLoans.length} className="px-2 py-1 border rounded bg-white">التالي</button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
@@ -1009,26 +891,27 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </div>
                             </div>
 
-                            {/* --- PRINTABLE REPORT (HIDDEN ON SCREEN) --- */}
+                            {/* --- CLEAN PDF PRINTABLE REPORT (EXACT MATCH) --- */}
                             <div className="hidden print:block print:p-8 bg-white text-black print:absolute print:top-0 print:left-0 print:w-full print:z-[9999]">
-                                {/* Simplified Header: Centered, No Branding, Just Context */}
-                                <div className="text-center border-b-2 border-black pb-4 mb-6">
+                                {/* Header */}
+                                <div className="text-center pb-4 mb-4">
                                     <h1 className="text-3xl font-black mb-1">مسير رواتب شهر {new Date(0, historyView[0]?.month || 0).toLocaleDateString('ar-EG', {month: 'long'})} {historyView[0]?.year}</h1>
                                     <p className="text-sm">تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
                                 </div>
+                                <hr className="border-black mb-6" />
 
-                                {/* Table without Signature Column */}
-                                <table className="w-full text-right text-[10px] border-collapse border border-black mb-8">
-                                    <thead className="bg-gray-100 font-bold border-b border-black">
+                                {/* Table */}
+                                <table className="w-full text-right text-[12px] border-collapse border border-black mb-8">
+                                    <thead>
                                         <tr>
-                                            <th className="p-2 border border-black">#</th>
-                                            <th className="p-2 border border-black w-40">اسم الموظف</th>
-                                            <th className="p-2 border border-black">المسمى الوظيفي</th>
+                                            <th className="p-2 border border-black text-center w-12">#</th>
+                                            <th className="p-2 border border-black w-48">اسم الموظف</th>
+                                            <th className="p-2 border border-black w-32">المسمى الوظيفي</th>
                                             <th className="p-2 border border-black text-center">الراتب الأساسي</th>
                                             <th className="p-2 border border-black text-center">إجمالي الإضافي</th>
                                             <th className="p-2 border border-black text-center">الحوافز والبدلات</th>
                                             <th className="p-2 border border-black text-center">إجمالي الاستقطاعات</th>
-                                            <th className="p-2 border border-black text-center font-black text-sm">صافي الراتب</th>
+                                            <th className="p-2 border border-black text-center font-black">صافي الراتب</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1052,18 +935,17 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             );
                                         })}
                                     </tbody>
-                                    <tfoot className="bg-gray-100 font-black border-t border-black">
-                                        <tr>
-                                            <td colSpan={3} className="p-2 text-center border-r border-black">الإجماليات</td>
-                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + r.basicSalary, 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + r.overtimeValue, 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + (r.incentives + r.commissions + r.bonuses), 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + (r.absentValue + r.penaltyValue + r.deductions + r.loanDeduction + r.insurance), 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black text-lg">{historyView.reduce((acc, r) => acc + r.netSalary, 0).toLocaleString()}</td>
+                                    <tfoot>
+                                        <tr className="border-t-2 border-black">
+                                            <td colSpan={3} className="p-2 text-left pl-8 border-r border-black font-black">الإجماليات</td>
+                                            <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + r.basicSalary, 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + r.overtimeValue, 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + (r.incentives + r.commissions + r.bonuses), 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black font-bold text-red-600">{historyView.reduce((acc, r) => acc + (r.absentValue + r.penaltyValue + r.deductions + r.loanDeduction + r.insurance), 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black text-lg font-black">{historyView.reduce((acc, r) => acc + r.netSalary, 0).toLocaleString()}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
-                                {/* Signature Block Removed */}
                             </div>
                         </>
                     ) : (
@@ -1118,131 +1000,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                             ))}
                         </div>
                     )}
-                </div>
-            )}
-
-            {/* --- PAYSLIP MODAL --- */}
-            {selectedPayslip && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in print:hidden" onClick={() => setSelectedPayslip(null)}>
-                    <div className="bg-white rounded-[1.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in relative" onClick={e => e.stopPropagation()}>
-                        {/* Header Gradient */}
-                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex justify-between items-start">
-                            <div>
-                                <h3 className="text-2xl font-black mb-1">قسيمة راتب</h3>
-                                <p className="opacity-70 text-sm">شهر {new Date(0, selectedPayslip.month).toLocaleDateString('ar-EG', {month: 'long'})} {selectedPayslip.year}</p>
-                            </div>
-                            <div className="text-left">
-                                <div className="font-bold text-lg">Mowazeb PRO</div>
-                                <div className="text-[10px] opacity-60 tracking-widest uppercase">Payroll System</div>
-                            </div>
-                        </div>
-
-                        {/* Employee Info */}
-                        <div className="p-6 border-b border-slate-100">
-                            <div className="flex items-center gap-4">
-                                <img 
-                                    src={employees.find(e => e.id === selectedPayslip.employeeId)?.avatar} 
-                                    className="w-16 h-16 rounded-full border-4 border-slate-50 shadow-sm" 
-                                    alt="" 
-                                />
-                                <div>
-                                    <h4 className="text-xl font-bold text-slate-800">{employees.find(e => e.id === selectedPayslip.employeeId)?.name}</h4>
-                                    <div className="flex gap-2 text-sm text-slate-500 mt-1">
-                                        <span className="bg-slate-100 px-2 py-0.5 rounded text-xs">{employees.find(e => e.id === selectedPayslip.employeeId)?.position}</span>
-                                        <span className="bg-slate-100 px-2 py-0.5 rounded text-xs dir-ltr">ID: {selectedPayslip.employeeId.slice(0,6)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Financial Details */}
-                        <div className="p-6 grid grid-cols-2 gap-8">
-                            {/* Earnings */}
-                            <div className="space-y-3">
-                                <h5 className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-4 border-b border-emerald-100 pb-2">المستحقات</h5>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">الراتب الأساسي</span>
-                                    <span className="font-bold">{selectedPayslip.basicSalary.toLocaleString()}</span>
-                                </div>
-                                {selectedPayslip.overtimeValue > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">عمل إضافي</span>
-                                        <span className="font-bold">{selectedPayslip.overtimeValue.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslip.incentives > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">حوافز</span>
-                                        <span className="font-bold">{selectedPayslip.incentives.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslip.commissions > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">عمولات</span>
-                                        <span className="font-bold">{selectedPayslip.commissions.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslip.bonuses > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">مكافآت</span>
-                                        <span className="font-bold">{selectedPayslip.bonuses.toLocaleString()}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Deductions */}
-                            <div className="space-y-3">
-                                <h5 className="text-xs font-black text-red-600 uppercase tracking-widest mb-4 border-b border-red-100 pb-2">الاستقطاعات</h5>
-                                {(selectedPayslip.absentValue + selectedPayslip.penaltyValue) > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">غياب وجزاءات</span>
-                                        <span className="font-bold text-red-600">{(selectedPayslip.absentValue + selectedPayslip.penaltyValue).toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslip.deductions > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">خصومات إضافية</span>
-                                        <span className="font-bold text-red-600">{selectedPayslip.deductions.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslip.loanDeduction > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">سلف</span>
-                                        <span className="font-bold text-red-600">{selectedPayslip.loanDeduction.toLocaleString()}</span>
-                                    </div>
-                                )}
-                                {selectedPayslip.insurance > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">تأمينات</span>
-                                        <span className="font-bold text-red-600">{selectedPayslip.insurance.toLocaleString()}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Net Salary Footer */}
-                        <div className="bg-slate-50 p-6 flex justify-between items-center border-t border-slate-100">
-                            <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase mb-1">صافي الراتب المستحق</div>
-                                <div className="text-3xl font-black text-slate-800">{selectedPayslip.netSalary.toLocaleString()} <span className="text-sm font-medium text-slate-400">ج.م</span></div>
-                            </div>
-                            <div className="flex gap-3">
-                                <button onClick={() => window.print()} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
-                                    <Printer size={20} />
-                                </button>
-                                <button className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm">
-                                    <Share2 size={20} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={() => setSelectedPayslip(null)}
-                            className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
                 </div>
             )}
         </div>
