@@ -1,6 +1,6 @@
 
 import { AttendanceRecord, DailyStats, Employee, EmployeeScore, AppConfig, UserRole } from './types';
-import { DEFAULT_CONFIG, DEFAULT_GRACE_PERIOD, DEFAULT_PENALTY_VALUE } from './constants';
+import { DEFAULT_CONFIG } from './constants';
 
 // Permissions Logic
 export const Permissions = {
@@ -166,9 +166,7 @@ export const calculateDailyStats = (dateStr: string, config: AppConfig, record?:
     }
     defaultStats.colorClass = 'bg-indigo-50 border-indigo-200 text-indigo-700';
   } else {
-    // --- UPDATED: Use Branch Specific Grace Period ---
-    const gracePeriod = branchSettings.gracePeriodMinutes ?? DEFAULT_GRACE_PERIOD;
-    
+    const gracePeriod = safeConfig.gracePeriodMinutes || 0;
     let actualDelay = 0;
     
     // 1. Check Entry
@@ -285,15 +283,10 @@ export const calculateRanking = (employees: Employee[], records: AttendanceRecor
   const maxDaysPresent = Math.max(...processedStats.map(s => s.daysPresent), 1);
 
   const scores: EmployeeScore[] = processedStats.map(stats => {
-      // --- UPDATED: Use Branch Specific Penalty Value ---
-      const branchConfig = (stats.emp.branch === 'factory') ? config.factory : config.office;
-      const penaltyVal = branchConfig.penaltyValue ?? DEFAULT_PENALTY_VALUE;
-
       const overtimeScore = (stats.totalNetOvertime / maxNetOvertime) * 80;
       const commitmentScore = (stats.totalActualWorkMinutes / maxWorkMinutes) * 10;
       const absenceScore = (stats.daysPresent / maxDaysPresent) * 10;
-      
-      const manualPenalty = stats.unexcusedAbsences * penaltyVal;
+      const manualPenalty = stats.unexcusedAbsences * (config.penaltyValue || 0);
 
       let rawScore = (overtimeScore + commitmentScore + absenceScore) - manualPenalty;
       let finalScore = Math.min(100, Math.max(0, Math.round(rawScore)));

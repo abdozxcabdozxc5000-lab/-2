@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 import { Employee, AttendanceRecord, PayrollRecord, Loan, AppConfig, EmploymentType } from '../types';
 import { calculateDailyStats, minutesToTime } from '../utils';
 import { upsertPayroll, upsertLoan, upsertSingleEmployee } from '../supabaseClient';
-import { DEFAULT_PENALTY_VALUE } from '../constants';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
     TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown
@@ -65,24 +64,19 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             });
 
             // 3. Overtime Calc
-            const branchConfig = (emp.branch === 'factory') ? config.factory : config.office;
-            const daysBase = branchConfig.payrollDaysBase || 30;
-            const hoursBase = branchConfig.payrollHoursBase || 8; 
-
-            const hourlyRate = basic > 0 ? (basic / daysBase / hoursBase) : 0;
+            // Updated Rule: Divide by 30 days, then by 9 hours
+            const hourlyRate = basic > 0 ? (basic / 30 / 9) : 0;
             let overtimeValue = 0;
             
             if (type === 'factory') {
                 const overtimeHours = totalOvertimeMinutes / 60;
-                // Multiplier is 1.0 (Hour for an Hour) as per user request
+                // Updated Rule: Multiplier is 1.0 (Hour for an Hour)
                 overtimeValue = Math.round(overtimeHours * hourlyRate * 1); 
             }
 
             // 4. Deductions
-            const dayRate = basic / daysBase;
-            // --- UPDATED: Use Branch Specific Penalty Value ---
-            const penaltyVal = branchConfig.penaltyValue ?? DEFAULT_PENALTY_VALUE;
-            const penaltyValue = Math.round(unexcusedAbsences * dayRate * penaltyVal); 
+            const dayRate = basic / 30;
+            const penaltyValue = Math.round(unexcusedAbsences * dayRate * (config.penaltyValue || 1)); 
 
             // 5. Loans
             const activeLoan = loans.find(l => l.employeeId === emp.id && l.status === 'active');
@@ -520,12 +514,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             const isFactory = emp?.employmentType === 'factory';
                                             const isOffice = emp?.employmentType === 'office';
                                             const isSales = emp?.employmentType === 'sales';
-                                            
-                                            // Get Configuration Used for Calc
-                                            const branchConfig = (emp?.branch === 'factory') ? config.factory : config.office;
-                                            const daysBase = branchConfig.payrollDaysBase || 30;
-                                            const hoursBase = branchConfig.payrollHoursBase || 8;
-                                            const hourlyRate = row.basicSalary > 0 ? (row.basicSalary / daysBase / hoursBase) : 0;
+                                            const hourlyRate = row.basicSalary > 0 ? (row.basicSalary / 30 / 9) : 0;
 
                                             return (
                                                 <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
