@@ -70,7 +70,8 @@ export interface PayrollRecord {
     // Deductions
     absentDays: number;
     absentValue: number;
-    penaltyValue: number; // خصومات جزائية
+    penaltyValue: number; // خصومات جزائية (تلقائية)
+    deductions: number;   // خصومات إضافية (يدوية)
     loanDeduction: number; // خصم السلفة
     insurance: number; // تأمينات
 

@@ -135,6 +135,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 absentDays: unexcusedAbsences,
                 absentValue: Math.round(unexcusedAbsences * dayRate),
                 penaltyValue: penaltyValue,
+                deductions: 0, // Default manual deductions
                 loanDeduction: loanDeduction,
                 insurance: 0,
                 netSalary: 0, 
@@ -146,7 +147,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         // Final Net Calculation
         const finalPayrolls = payrolls.map(p => ({
             ...p,
-            netSalary: (p.basicSalary + p.overtimeValue + p.incentives + p.commissions + p.bonuses) - (p.absentValue + p.penaltyValue + p.loanDeduction + p.insurance)
+            netSalary: (p.basicSalary + p.overtimeValue + p.incentives + p.commissions + p.bonuses) - (p.absentValue + p.penaltyValue + p.deductions + p.loanDeduction + p.insurance)
         }));
 
         setGeneratedData(finalPayrolls);
@@ -158,7 +159,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         
         // Recalculate Net
         const p = updated[index];
-        p.netSalary = (p.basicSalary + p.overtimeValue + p.incentives + p.commissions + p.bonuses) - (p.absentValue + p.penaltyValue + p.loanDeduction + p.insurance);
+        p.netSalary = (p.basicSalary + p.overtimeValue + p.incentives + p.commissions + p.bonuses) - (p.absentValue + p.penaltyValue + p.deductions + p.loanDeduction + p.insurance);
         
         setGeneratedData(updated);
     };
@@ -270,9 +271,10 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 'إجمالي المستحق': (record.basicSalary + record.overtimeValue + record.incentives + record.commissions + record.bonuses),
                 'أيام الغياب': record.absentDays,
                 'خصم الغياب': record.absentValue + record.penaltyValue,
+                'خصومات إضافية': record.deductions,
                 'سداد السلف': record.loanDeduction,
                 'تأمينات': record.insurance,
-                'إجمالي الاستقطاعات': (record.absentValue + record.penaltyValue + record.loanDeduction + record.insurance),
+                'إجمالي الاستقطاعات': (record.absentValue + record.penaltyValue + record.deductions + record.loanDeduction + record.insurance),
                 'صافي الراتب': record.netSalary,
                 'حالة الصرف': record.status === 'paid' ? 'تم الصرف' : 'معلق'
             };
@@ -297,6 +299,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             { wch: 15 }, // إجمالي المستحق
             { wch: 10 }, // أيام الغياب
             { wch: 15 }, // خصم الغياب
+            { wch: 15 }, // خصومات إضافية
             { wch: 12 }, // سداد السلف
             { wch: 12 }, // تأمينات
             { wch: 15 }, // إجمالي الاستقطاعات
@@ -483,6 +486,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <th className="p-5 text-center">عمولات</th>
                                             <th className="p-5 text-center">مكافآت</th>
                                             <th className="p-5 text-center text-red-500">خصم سلفة</th>
+                                            <th className="p-5 text-center text-red-500">خصومات يدوية</th>
                                             <th className="p-5 text-center">الصافي</th>
                                             <th className="p-5 text-center">إجراءات</th>
                                         </tr>
@@ -546,6 +550,13 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     </td>
                                                     <td className="p-5 text-center font-bold text-red-500">
                                                         {row.loanDeduction > 0 ? row.loanDeduction : '-'}
+                                                    </td>
+                                                    <td className="p-5 text-center">
+                                                        <input 
+                                                            type="number" value={row.deductions || 0} 
+                                                            onChange={e => handleUpdateRecord(idx, 'deductions', parseFloat(e.target.value))}
+                                                            className="w-20 p-1.5 border border-red-200 rounded-lg text-center text-sm font-bold text-red-600 outline-none focus:ring-2 focus:ring-red-500 bg-red-50 focus:bg-white transition-all"
+                                                        />
                                                     </td>
                                                     <td className="p-5 text-center">
                                                         <span className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-xl font-black text-sm">
@@ -894,7 +905,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                     <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
                                                     <td className="p-4 text-center font-mono text-green-600 font-bold">{row.overtimeValue.toLocaleString()}</td>
                                                     <td className="p-4 text-center text-purple-600">{(row.incentives + row.commissions + row.bonuses).toLocaleString()}</td>
-                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.loanDeduction + row.insurance).toLocaleString()}</td>
+                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance).toLocaleString()}</td>
                                                     <td className="p-4 text-center">
                                                         <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-sm">
                                                             {row.netSalary.toLocaleString()}
@@ -1049,6 +1060,12 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">غياب وجزاءات</span>
                                         <span className="font-bold text-red-600">{(selectedPayslip.absentValue + selectedPayslip.penaltyValue).toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {selectedPayslip.deductions > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">خصومات إضافية</span>
+                                        <span className="font-bold text-red-600">{selectedPayslip.deductions.toLocaleString()}</span>
                                     </div>
                                 )}
                                 {selectedPayslip.loanDeduction > 0 && (
