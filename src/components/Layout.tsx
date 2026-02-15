@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, UserCog, Moon, Sun, Fingerprint, History, Cloud, CloudOff, Info, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, UserCog, Moon, Sun, Fingerprint, History, Cloud, CloudOff, Info, X, CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 import { UserRole } from '../types';
 import { Permissions } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,12 +19,13 @@ interface LayoutProps {
   cloudError?: string | null;
   notifications: Array<{id: string, message: string, type: 'info' | 'success' | 'error'}>;
   removeNotification: (id: string) => void;
+  onExit: () => void; // New prop for back navigation
 }
 
 const Layout: React.FC<LayoutProps> = ({ 
   children, activeTab, onTabChange, userRole, currentUserName, 
   currentUserRole, onLogout, darkMode, toggleDarkMode,
-  isSyncing, cloudError, notifications, removeNotification
+  isSyncing, cloudError, notifications, removeNotification, onExit
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -127,10 +128,20 @@ const Layout: React.FC<LayoutProps> = ({
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden print:overflow-visible print:block print:h-auto">
         {/* Header */}
         <header className="flex items-center justify-between px-8 h-24 bg-white dark:bg-slate-800 border-b border-slate-50 dark:border-slate-700 shadow-sm z-30 print:hidden">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-3 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
               <Menu size={24} />
             </button>
+            
+            {/* Back Button */}
+            <button 
+                onClick={onExit} 
+                className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 transition-colors text-slate-600 dark:text-slate-300 shadow-sm"
+                title="العودة للبوابة الرئيسية"
+            >
+                <ArrowRight size={20} />
+            </button>
+
             <div className="hidden md:flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-[11px] font-black transition-all">
                 {isSyncing ? (
                   <div className="flex items-center gap-2 text-blue-500">
@@ -215,4 +226,3 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 export default Layout;
-    
