@@ -234,6 +234,14 @@ export const upsertPayroll = async (payroll: PayrollRecord) => {
     return { success: !error, error };
 };
 
+// NEW FUNCTION: Delete Payroll Archive by Month/Year
+export const deletePayrollArchive = async (month: number, year: number) => {
+    if (!supabase) initSupabase();
+    if (!supabase) return { success: false };
+    const { error } = await supabase.from('payrolls').delete().eq('month', month).eq('year', year);
+    return { success: !error, error };
+};
+
 export const uploadAllData = async (employees: Employee[], records: AttendanceRecord[], config: AppConfig) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false, message: 'Not connected' };

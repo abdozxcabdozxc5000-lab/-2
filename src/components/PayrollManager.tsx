@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Employee, AttendanceRecord, PayrollRecord, Loan, AppConfig, EmploymentType } from '../types';
 import { calculateDailyStats, minutesToTime } from '../utils';
-import { upsertPayroll, upsertLoan, upsertSingleEmployee, deleteLoan } from '../supabaseClient';
+import { upsertPayroll, upsertLoan, upsertSingleEmployee, deleteLoan, deletePayrollArchive } from '../supabaseClient';
 import { DEFAULT_PENALTY_VALUE } from '../constants';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
@@ -184,6 +184,18 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         onUpdateData(); // Reload data from cloud to update history
         setGeneratedData([]); // Clear current generation
         setActiveTab('history'); // Go to history
+    };
+
+    const handleDeleteArchive = async (month: number, year: number) => {
+        if (!confirm(`هل أنت متأكد من حذف أرشيف رواتب شهر ${new Date(0, month).toLocaleDateString('ar-EG', {month: 'long'})} ${year} نهائياً؟`)) return;
+        
+        const res = await deletePayrollArchive(month, year);
+        if (res.success) {
+            alert('تم حذف الأرشيف بنجاح');
+            onUpdateData();
+        } else {
+            alert('حدث خطأ أثناء الحذف: ' + (res.error?.message || 'غير معروف'));
+        }
     };
 
     // --- SETUP HANDLERS ---
@@ -871,7 +883,19 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                     <p>لا توجد سجلات رواتب مؤرشفة حتى الآن.</p>
                                 </div>
                             ) : historyGroups.map((group) => (
-                                <div key={group.key} onClick={() => setHistoryView(group.records)} className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group">
+                                <div key={group.key} onClick={() => setHistoryView(group.records)} className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group relative">
+                                    <div className="absolute top-4 left-4 z-10">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteArchive(group.month, group.year);
+                                            }}
+                                            className="p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors"
+                                            title="حذف الأرشيف"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center font-bold text-xl">
