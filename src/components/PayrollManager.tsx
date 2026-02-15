@@ -884,18 +884,6 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </div>
                             ) : historyGroups.map((group) => (
                                 <div key={group.key} onClick={() => setHistoryView(group.records)} className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all group relative">
-                                    <div className="absolute top-4 left-4 z-10">
-                                        <button 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteArchive(group.month, group.year);
-                                            }}
-                                            className="p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors"
-                                            title="حذف الأرشيف"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center font-bold text-xl">
@@ -906,8 +894,20 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                 <p className="text-slate-400 text-xs font-mono">{group.year}</p>
                                             </div>
                                         </div>
-                                        <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                            <Eye size={20} />
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-400 group-hover:text-emerald-500 transition-colors">
+                                                <Eye size={20} />
+                                            </div>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteArchive(group.month, group.year);
+                                                }}
+                                                className="p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-colors"
+                                                title="حذف الأرشيف"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
                                         </div>
                                     </div>
                                     
