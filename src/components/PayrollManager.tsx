@@ -261,6 +261,10 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
         else alert('حدث خطأ أثناء الحذف');
     };
 
+    const handlePrintHistory = () => {
+        window.print();
+    };
+
     const handleExportExcel = (data: PayrollRecord[]) => {
         if (data.length === 0) {
             alert('لا توجد بيانات للتصدير');
@@ -360,7 +364,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     return (
         <div className="space-y-8 pb-20 relative animate-fade-in">
             {/* Top Navigation & Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
                 <div className="flex items-center gap-4">
                     <button 
                         onClick={(e) => { e.preventDefault(); onExit(); }}
@@ -400,7 +404,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
             {/* Stats Cards (Only Visible in Generate Tab) */}
             {activeTab === 'generate' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:translate-y-[-2px] transition-all">
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl">
                             <Banknote size={24} />
@@ -785,7 +789,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {activeTab === 'loans' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* New Loan Form */}
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 h-fit">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 h-fit print:hidden">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-bold text-lg flex items-center gap-2 text-slate-800 dark:text-white">
                                 <Wallet className="text-emerald-500" /> إضافة سلفة جديدة
@@ -849,7 +853,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                     <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-lg text-slate-800 dark:text-white">سجل السلف الجارية</h3>
-                            <div className="relative w-64">
+                            <div className="relative w-64 print:hidden">
                                 <input type="text" placeholder="بحث باسم الموظف..." className="w-full pl-8 pr-4 py-2 bg-slate-50 rounded-lg text-sm border-none outline-none focus:ring-1 focus:ring-emerald-500" />
                                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                             </div>
@@ -864,7 +868,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                         <th className="p-4 text-center">المتبقي (مرحل)</th>
                                         <th className="p-4">القسط</th>
                                         <th className="p-4">الحالة</th>
-                                        <th className="p-4 text-center">إجراءات</th>
+                                        <th className="p-4 text-center print:hidden">إجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -877,7 +881,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                             <tr key={loan.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs print:hidden">
                                                             {emp?.name.slice(0,2)}
                                                         </div>
                                                         <div>
@@ -893,7 +897,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                                 <td className="p-4">
                                                     <span className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded text-[10px] font-bold">نشطة</span>
                                                 </td>
-                                                <td className="p-4 text-center">
+                                                <td className="p-4 text-center print:hidden">
                                                     <button 
                                                         onClick={() => handleDeleteLoan(loan.id)}
                                                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -909,7 +913,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                         </div>
                         {/* Conditional Pagination Footer */}
                         {filteredLoans.length > ITEMS_PER_PAGE && (
-                            <div className="bg-slate-50 p-3 text-center text-xs text-slate-400 border-t border-slate-100 flex justify-between items-center px-4">
+                            <div className="bg-slate-50 p-3 text-center text-xs text-slate-400 border-t border-slate-100 flex justify-between items-center px-4 print:hidden">
                                 <div>عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredLoans.length)} من {filteredLoans.length} سجل</div>
                                 <div className="flex gap-2">
                                     <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 border rounded bg-white">السابق</button>
@@ -926,74 +930,162 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {activeTab === 'history' && (
                 <div className="space-y-6">
                     {historyView ? (
-                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700 animate-slide-in-right">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setHistoryView(null)} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                                        <ArrowLeft size={20} />
-                                    </button>
-                                    <div>
-                                        <h3 className="font-bold text-lg text-slate-800 dark:text-white">تفاصيل الرواتب المؤرشفة</h3>
-                                        <p className="text-sm text-slate-500">عرض للقراءة فقط</p>
+                        <>
+                            <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700 animate-slide-in-right print:hidden">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                                    <div className="flex items-center gap-4">
+                                        <button onClick={() => setHistoryView(null)} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                                            <ArrowLeft size={20} />
+                                        </button>
+                                        <div>
+                                            <h3 className="font-bold text-lg text-slate-800 dark:text-white">تفاصيل الرواتب المؤرشفة</h3>
+                                            <p className="text-sm text-slate-500">عرض للقراءة فقط</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={handlePrintHistory}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all"
+                                        >
+                                            <Printer size={16} /> طباعة التقرير
+                                        </button>
+                                        <button 
+                                            onClick={() => handleExportExcel(historyView)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 rounded-xl text-slate-600 dark:text-slate-200 text-sm font-bold shadow-sm hover:shadow transition-all"
+                                        >
+                                            <Download size={16} /> تحميل Excel
+                                        </button>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => handleExportExcel(historyView)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 rounded-xl text-slate-600 dark:text-slate-200 text-sm font-bold shadow-sm hover:shadow transition-all"
-                                >
-                                    <Download size={16} /> تحميل Excel
-                                </button>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right text-xs">
+                                        <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-600 font-bold uppercase">
+                                            <tr>
+                                                <th className="p-4 min-w-[150px]">الموظف</th>
+                                                <th className="p-4 text-center">الأساسي</th>
+                                                <th className="p-4 text-center bg-green-50/50 dark:bg-green-900/10">ق.إضافي</th>
+                                                <th className="p-4 text-center bg-purple-50/50 dark:bg-purple-900/10">حوافز وعمولات</th>
+                                                <th className="p-4 text-center bg-red-50/50 dark:bg-red-900/10">خصومات</th>
+                                                <th className="p-4 text-center font-black text-base">الصافي</th>
+                                                <th className="p-4 text-center">الحالة</th>
+                                                <th className="p-4 text-center">قسيمة</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            {historyView.map((row) => {
+                                                const emp = employees.find(e => e.id === row.employeeId);
+                                                return (
+                                                    <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
+                                                        <td className="p-4 font-bold flex flex-col">
+                                                            <span className="text-sm">{emp?.name}</span>
+                                                            <span className="text-[10px] text-slate-400">{getEmploymentLabel(emp?.employmentType)}</span>
+                                                        </td>
+                                                        <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
+                                                        <td className="p-4 text-center font-mono text-green-600 font-bold">{row.overtimeValue.toLocaleString()}</td>
+                                                        <td className="p-4 text-center text-purple-600">{(row.incentives + row.commissions + row.bonuses).toLocaleString()}</td>
+                                                        <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance).toLocaleString()}</td>
+                                                        <td className="p-4 text-center">
+                                                            <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-sm">
+                                                                {row.netSalary.toLocaleString()}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-4 text-center">
+                                                            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold">مدفوع</span>
+                                                        </td>
+                                                        <td className="p-4 text-center">
+                                                            <button 
+                                                                onClick={() => setSelectedPayslip(row)}
+                                                                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                            >
+                                                                <FileText size={16} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-right text-xs">
-                                    <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-600 font-bold uppercase">
+
+                            {/* --- PRINTABLE REPORT (HIDDEN ON SCREEN) --- */}
+                            <div className="hidden print:block print:p-8 bg-white text-black print:absolute print:top-0 print:left-0 print:w-full print:z-[9999]">
+                                <div className="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
+                                    <div className="text-right">
+                                        <h1 className="text-2xl font-black mb-1">مسير رواتب شهر {new Date(0, historyView[0]?.month || 0).toLocaleDateString('ar-EG', {month: 'long'})} {historyView[0]?.year}</h1>
+                                        <p className="text-sm font-bold">تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
+                                    </div>
+                                    <div className="text-left">
+                                        <h2 className="text-xl font-black">مواظب PRO</h2>
+                                        <p className="text-xs font-bold uppercase tracking-widest">HR & Payroll System</p>
+                                    </div>
+                                </div>
+
+                                <table className="w-full text-right text-[10px] border-collapse border border-black mb-8">
+                                    <thead className="bg-gray-100 font-bold border-b border-black">
                                         <tr>
-                                            <th className="p-4 min-w-[150px]">الموظف</th>
-                                            <th className="p-4 text-center">الأساسي</th>
-                                            <th className="p-4 text-center bg-green-50/50 dark:bg-green-900/10">ق.إضافي</th>
-                                            <th className="p-4 text-center bg-purple-50/50 dark:bg-purple-900/10">حوافز وعمولات</th>
-                                            <th className="p-4 text-center bg-red-50/50 dark:bg-red-900/10">خصومات</th>
-                                            <th className="p-4 text-center font-black text-base">الصافي</th>
-                                            <th className="p-4 text-center">الحالة</th>
-                                            <th className="p-4 text-center">قسيمة</th>
+                                            <th className="p-2 border border-black">#</th>
+                                            <th className="p-2 border border-black w-40">اسم الموظف</th>
+                                            <th className="p-2 border border-black">المسمى الوظيفي</th>
+                                            <th className="p-2 border border-black text-center">الراتب الأساسي</th>
+                                            <th className="p-2 border border-black text-center">إجمالي الإضافي</th>
+                                            <th className="p-2 border border-black text-center">الحوافز والبدلات</th>
+                                            <th className="p-2 border border-black text-center">إجمالي الاستقطاعات</th>
+                                            <th className="p-2 border border-black text-center font-black text-sm">صافي الراتب</th>
+                                            <th className="p-2 border border-black w-24 text-center">التوقيع</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                        {historyView.map((row) => {
+                                    <tbody>
+                                        {historyView.map((row, idx) => {
                                             const emp = employees.find(e => e.id === row.employeeId);
+                                            const additions = row.overtimeValue;
+                                            const incentives = row.incentives + row.commissions + row.bonuses;
+                                            const deductions = row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance;
+                                            
                                             return (
-                                                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
-                                                    <td className="p-4 font-bold flex flex-col">
-                                                        <span className="text-sm">{emp?.name}</span>
-                                                        <span className="text-[10px] text-slate-400">{getEmploymentLabel(emp?.employmentType)}</span>
-                                                    </td>
-                                                    <td className="p-4 text-center font-mono">{row.basicSalary.toLocaleString()}</td>
-                                                    <td className="p-4 text-center font-mono text-green-600 font-bold">{row.overtimeValue.toLocaleString()}</td>
-                                                    <td className="p-4 text-center text-purple-600">{(row.incentives + row.commissions + row.bonuses).toLocaleString()}</td>
-                                                    <td className="p-4 text-center text-red-600 font-bold">{(row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance).toLocaleString()}</td>
-                                                    <td className="p-4 text-center">
-                                                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-black text-sm">
-                                                            {row.netSalary.toLocaleString()}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold">مدفوع</span>
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <button 
-                                                            onClick={() => setSelectedPayslip(row)}
-                                                            className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                                                        >
-                                                            <FileText size={16} />
-                                                        </button>
-                                                    </td>
+                                                <tr key={row.id} className="border-b border-black">
+                                                    <td className="p-2 border-r border-black text-center">{idx + 1}</td>
+                                                    <td className="p-2 border-r border-black font-bold">{emp?.name}</td>
+                                                    <td className="p-2 border-r border-black">{emp?.position}</td>
+                                                    <td className="p-2 border-r border-black text-center font-mono">{row.basicSalary.toLocaleString()}</td>
+                                                    <td className="p-2 border-r border-black text-center font-mono">{additions.toLocaleString()}</td>
+                                                    <td className="p-2 border-r border-black text-center font-mono">{incentives.toLocaleString()}</td>
+                                                    <td className="p-2 border-r border-black text-center font-mono text-red-600">{deductions.toLocaleString()}</td>
+                                                    <td className="p-2 border-r border-black text-center font-black text-sm">{row.netSalary.toLocaleString()}</td>
+                                                    <td className="p-2 border-l border-black"></td>
                                                 </tr>
                                             );
                                         })}
                                     </tbody>
+                                    <tfoot className="bg-gray-100 font-black border-t border-black">
+                                        <tr>
+                                            <td colSpan={3} className="p-2 text-center border-r border-black">الإجماليات</td>
+                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + r.basicSalary, 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + r.overtimeValue, 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + (r.incentives + r.commissions + r.bonuses), 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black">{historyView.reduce((acc, r) => acc + (r.absentValue + r.penaltyValue + r.deductions + r.loanDeduction + r.insurance), 0).toLocaleString()}</td>
+                                            <td className="p-2 text-center border-r border-black text-lg">{historyView.reduce((acc, r) => acc + r.netSalary, 0).toLocaleString()}</td>
+                                            <td className="p-2"></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
+
+                                <div className="flex justify-between mt-12 px-8">
+                                    <div className="text-center">
+                                        <p className="font-bold mb-8">المحاسب</p>
+                                        <p>___________________</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="font-bold mb-8">مدير الموارد البشرية</p>
+                                        <p>___________________</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="font-bold mb-8">اعتماد المدير العام</p>
+                                        <p>___________________</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {historyGroups.length === 0 ? (
@@ -1051,7 +1143,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
             {/* --- PAYSLIP MODAL --- */}
             {selectedPayslip && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedPayslip(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in print:hidden" onClick={() => setSelectedPayslip(null)}>
                     <div className="bg-white rounded-[1.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in relative" onClick={e => e.stopPropagation()}>
                         {/* Header Gradient */}
                         <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex justify-between items-start">
