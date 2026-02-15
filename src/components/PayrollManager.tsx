@@ -891,61 +891,63 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                                 </div>
                             </div>
 
-                            {/* --- CLEAN PDF PRINTABLE REPORT (EXACT MATCH) --- */}
-                            <div className="hidden print:block print:p-8 bg-white text-black print:absolute print:top-0 print:left-0 print:w-full print:z-[9999]">
-                                {/* Header */}
-                                <div className="text-center pb-4 mb-4">
-                                    <h1 className="text-3xl font-black mb-1">مسير رواتب شهر {new Date(0, historyView[0]?.month || 0).toLocaleDateString('ar-EG', {month: 'long'})} {historyView[0]?.year}</h1>
-                                    <p className="text-sm">تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
-                                </div>
-                                <hr className="border-black mb-6" />
+                            {/* --- CLEAN PDF PRINTABLE REPORT (FIXED OVERLAY) --- */}
+                            <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-[99999] print:w-screen print:min-h-screen print:overflow-visible">
+                                <div className="print:p-8 print:w-full">
+                                    {/* Header */}
+                                    <div className="text-center pb-4 mb-4">
+                                        <h1 className="text-3xl font-black mb-1 text-black">مسير رواتب شهر {new Date(0, historyView[0]?.month || 0).toLocaleDateString('ar-EG', {month: 'long'})} {historyView[0]?.year}</h1>
+                                        <p className="text-sm text-black">تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
+                                    </div>
+                                    <hr className="border-black mb-6" />
 
-                                {/* Table */}
-                                <table className="w-full text-right text-[12px] border-collapse border border-black mb-8">
-                                    <thead>
-                                        <tr>
-                                            <th className="p-2 border border-black text-center w-12">#</th>
-                                            <th className="p-2 border border-black w-48">اسم الموظف</th>
-                                            <th className="p-2 border border-black w-32">المسمى الوظيفي</th>
-                                            <th className="p-2 border border-black text-center">الراتب الأساسي</th>
-                                            <th className="p-2 border border-black text-center">إجمالي الإضافي</th>
-                                            <th className="p-2 border border-black text-center">الحوافز والبدلات</th>
-                                            <th className="p-2 border border-black text-center">إجمالي الاستقطاعات</th>
-                                            <th className="p-2 border border-black text-center font-black">صافي الراتب</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {historyView.map((row, idx) => {
-                                            const emp = employees.find(e => e.id === row.employeeId);
-                                            const additions = row.overtimeValue;
-                                            const incentives = row.incentives + row.commissions + row.bonuses;
-                                            const deductions = row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance;
-                                            
-                                            return (
-                                                <tr key={row.id} className="border-b border-black">
-                                                    <td className="p-2 border-r border-black text-center">{idx + 1}</td>
-                                                    <td className="p-2 border-r border-black font-bold">{emp?.name}</td>
-                                                    <td className="p-2 border-r border-black">{emp?.position}</td>
-                                                    <td className="p-2 border-r border-black text-center font-mono">{row.basicSalary.toLocaleString()}</td>
-                                                    <td className="p-2 border-r border-black text-center font-mono">{additions.toLocaleString()}</td>
-                                                    <td className="p-2 border-r border-black text-center font-mono">{incentives.toLocaleString()}</td>
-                                                    <td className="p-2 border-r border-black text-center font-mono text-red-600">{deductions.toLocaleString()}</td>
-                                                    <td className="p-2 border-r border-black text-center font-black text-sm">{row.netSalary.toLocaleString()}</td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr className="border-t-2 border-black">
-                                            <td colSpan={3} className="p-2 text-left pl-8 border-r border-black font-black">الإجماليات</td>
-                                            <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + r.basicSalary, 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + r.overtimeValue, 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + (r.incentives + r.commissions + r.bonuses), 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black font-bold text-red-600">{historyView.reduce((acc, r) => acc + (r.absentValue + r.penaltyValue + r.deductions + r.loanDeduction + r.insurance), 0).toLocaleString()}</td>
-                                            <td className="p-2 text-center border-r border-black text-lg font-black">{historyView.reduce((acc, r) => acc + r.netSalary, 0).toLocaleString()}</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                    {/* Table */}
+                                    <table className="w-full text-right text-[12px] border-collapse border border-black mb-8 text-black">
+                                        <thead>
+                                            <tr>
+                                                <th className="p-2 border border-black text-center w-12">#</th>
+                                                <th className="p-2 border border-black w-48">اسم الموظف</th>
+                                                <th className="p-2 border border-black w-32">المسمى الوظيفي</th>
+                                                <th className="p-2 border border-black text-center">الراتب الأساسي</th>
+                                                <th className="p-2 border border-black text-center">إجمالي الإضافي</th>
+                                                <th className="p-2 border border-black text-center">الحوافز والبدلات</th>
+                                                <th className="p-2 border border-black text-center">إجمالي الاستقطاعات</th>
+                                                <th className="p-2 border border-black text-center font-black">صافي الراتب</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {historyView.map((row, idx) => {
+                                                const emp = employees.find(e => e.id === row.employeeId);
+                                                const additions = row.overtimeValue;
+                                                const incentives = row.incentives + row.commissions + row.bonuses;
+                                                const deductions = row.absentValue + row.penaltyValue + row.deductions + row.loanDeduction + row.insurance;
+                                                
+                                                return (
+                                                    <tr key={row.id} className="border-b border-black">
+                                                        <td className="p-2 border-r border-black text-center">{idx + 1}</td>
+                                                        <td className="p-2 border-r border-black font-bold">{emp?.name}</td>
+                                                        <td className="p-2 border-r border-black">{emp?.position}</td>
+                                                        <td className="p-2 border-r border-black text-center font-mono">{row.basicSalary.toLocaleString()}</td>
+                                                        <td className="p-2 border-r border-black text-center font-mono">{additions.toLocaleString()}</td>
+                                                        <td className="p-2 border-r border-black text-center font-mono">{incentives.toLocaleString()}</td>
+                                                        <td className="p-2 border-r border-black text-center font-mono text-red-600">{deductions.toLocaleString()}</td>
+                                                        <td className="p-2 border-r border-black text-center font-black text-sm">{row.netSalary.toLocaleString()}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="border-t-2 border-black">
+                                                <td colSpan={3} className="p-2 text-left pl-8 border-r border-black font-black">الإجماليات</td>
+                                                <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + r.basicSalary, 0).toLocaleString()}</td>
+                                                <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + r.overtimeValue, 0).toLocaleString()}</td>
+                                                <td className="p-2 text-center border-r border-black font-bold">{historyView.reduce((acc, r) => acc + (r.incentives + r.commissions + r.bonuses), 0).toLocaleString()}</td>
+                                                <td className="p-2 text-center border-r border-black font-bold text-red-600">{historyView.reduce((acc, r) => acc + (r.absentValue + r.penaltyValue + r.deductions + r.loanDeduction + r.insurance), 0).toLocaleString()}</td>
+                                                <td className="p-2 text-center border-r border-black text-lg font-black">{historyView.reduce((acc, r) => acc + r.netSalary, 0).toLocaleString()}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
                         </>
                     ) : (
