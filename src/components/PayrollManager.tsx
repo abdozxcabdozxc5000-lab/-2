@@ -4,6 +4,7 @@ import { Employee, AttendanceRecord, PayrollRecord, Loan, AppConfig, EmploymentT
 import { calculateDailyStats, minutesToTime } from '../utils';
 import { upsertPayroll, upsertLoan, upsertSingleEmployee, deleteLoan, deletePayrollArchive } from '../supabaseClient';
 import { DEFAULT_PENALTY_VALUE } from '../constants';
+import * as XLSX from 'xlsx';
 import { 
     Banknote, Users, Calculator, Wallet, Save, Printer, 
     TrendingUp, Calendar, AlertCircle, CheckCircle, ArrowLeft, Search, Building, Factory, DollarSign, Crown, Trash2,
@@ -244,35 +245,77 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
     };
 
     const handleExportExcel = (data: PayrollRecord[]) => {
-        if (data.length === 0) return;
-        
-        const headers = ['الموظف', 'الفرع', 'الراتب الأساسي', 'قيمة الإضافي', 'حوافز', 'عمولات', 'مكافآت', 'خصم غياب', 'خصم سلف', 'صافي الراتب'];
-        
-        const rows = data.map(p => {
-            const emp = employees.find(e => e.id === p.employeeId);
-            return [
-                `"${emp?.name || ''}"`,
-                emp?.branch === 'factory' ? 'مصنع' : 'مكتب',
-                p.basicSalary,
-                p.overtimeValue,
-                p.incentives,
-                p.commissions,
-                p.bonuses,
-                p.absentValue + p.penaltyValue,
-                p.loanDeduction,
-                p.netSalary
-            ].join(',');
+        if (data.length === 0) {
+            alert('لا توجد بيانات للتصدير');
+            return;
+        }
+
+        // 1. تحضير البيانات بتنسيق مناسب للإكسل
+        const formattedData = data.map(record => {
+            const emp = employees.find(e => e.id === record.employeeId);
+            const branchName = emp?.branch === 'factory' ? 'مصنع' : 'مكتب';
+            
+            return {
+                'كود الموظف': emp?.id.substring(0, 6) || '-',
+                'اسم الموظف': emp?.name || 'غير معروف',
+                'المسمى الوظيفي': emp?.position,
+                'الفرع': branchName,
+                'الراتب الأساسي': record.basicSalary,
+                'قيمة الساعة': (record.basicSalary / 30 / 8).toFixed(2),
+                'ساعات إضافي': record.overtimeHours,
+                'قيمة الإضافي': record.overtimeValue,
+                'الحوافز': record.incentives,
+                'العمولات': record.commissions,
+                'المكافآت': record.bonuses,
+                'إجمالي المستحق': (record.basicSalary + record.overtimeValue + record.incentives + record.commissions + record.bonuses),
+                'أيام الغياب': record.absentDays,
+                'خصم الغياب': record.absentValue + record.penaltyValue,
+                'سداد السلف': record.loanDeduction,
+                'تأمينات': record.insurance,
+                'إجمالي الاستقطاعات': (record.absentValue + record.penaltyValue + record.loanDeduction + record.insurance),
+                'صافي الراتب': record.netSalary,
+                'حالة الصرف': record.status === 'paid' ? 'تم الصرف' : 'معلق'
+            };
         });
 
-        const csvContent = "\uFEFF" + [headers.join(','), ...rows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `Payroll_Report.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // 2. إنشاء ورقة العمل (Worksheet)
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+        // 3. ضبط عرض الأعمدة (Columns Width)
+        const wscols = [
+            { wch: 10 }, // كود
+            { wch: 25 }, // الاسم
+            { wch: 15 }, // الوظيفة
+            { wch: 10 }, // الفرع
+            { wch: 12 }, // الأساسي
+            { wch: 10 }, // قيمة الساعة
+            { wch: 12 }, // ساعات إضافي
+            { wch: 12 }, // قيمة إضافي
+            { wch: 10 }, // حوافز
+            { wch: 10 }, // عمولات
+            { wch: 10 }, // مكافآت
+            { wch: 15 }, // إجمالي المستحق
+            { wch: 10 }, // أيام الغياب
+            { wch: 15 }, // خصم الغياب
+            { wch: 12 }, // سداد السلف
+            { wch: 12 }, // تأمينات
+            { wch: 15 }, // إجمالي الاستقطاعات
+            { wch: 15 }, // الصافي
+            { wch: 12 }, // الحالة
+        ];
+        worksheet['!cols'] = wscols;
+
+        // 4. إنشاء ملف العمل (Workbook) مع تفعيل اتجاه اليمين لليسار (RTL)
+        const workbook = XLSX.utils.book_new();
+        workbook.Workbook = {
+            Views: [{ RTL: true }]
+        };
+        
+        XLSX.utils.book_append_sheet(workbook, worksheet, "مسير الرواتب");
+
+        // 5. حفظ الملف
+        const fileName = `Payroll_Report_${new Date().getFullYear()}_${new Date().getMonth()+1}_${new Date().getTime()}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
     };
 
     const getEmploymentLabel = (type?: EmploymentType) => {
