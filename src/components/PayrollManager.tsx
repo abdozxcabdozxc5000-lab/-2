@@ -117,10 +117,11 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 overtimeValue = Math.round(overtimeHours * hourlyRate * 1); 
             }
 
-            // 4. Deductions
-            const dayRate = basic / daysBase;
-            const penaltyVal = branchConfig.penaltyValue ?? DEFAULT_PENALTY_VALUE;
-            const penaltyValue = Math.round(unexcusedAbsences * dayRate * penaltyVal); 
+            // 4. Deductions (DISABLED AUTOMATIC CALCULATION PER REQUEST)
+            // User requested to handle all deductions manually in the 'deductions' field.
+            // Absent value and penalty value are forced to 0.
+            const absentValue = 0;
+            const penaltyValue = 0;
 
             // 5. Loans
             const activeLoan = loans.find(l => l.employeeId === emp.id && l.status === 'active');
@@ -143,7 +144,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                 commissions: 0,
                 bonuses: 0,
                 absentDays: unexcusedAbsences,
-                absentValue: Math.round(unexcusedAbsences * dayRate),
+                absentValue: absentValue,
                 penaltyValue: penaltyValue,
                 deductions: 0, // Default manual deductions
                 loanDeduction: loanDeduction,
@@ -450,7 +451,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
             {activeTab === 'generate' && (
                 <div className="space-y-6">
                     {/* Action Bar */}
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
                         <div className="flex gap-2 w-full md:w-auto">
                             <button 
                                 onClick={calculatePayroll}
@@ -503,7 +504,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
                     {/* Data Table */}
                     {generatedData.length > 0 && (
-                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden print:hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-right text-sm">
                                     <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold text-xs uppercase border-b border-slate-100 dark:border-slate-700">
@@ -656,7 +657,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
 
             {/* 2. SETUP TAB */}
             {activeTab === 'setup' && (
-                <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700 print:hidden">
                     <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
                         <div>
                             <h3 className="font-bold text-lg text-slate-800 dark:text-white">تحديد الرواتب الأساسية وأنواع الوظائف</h3>
@@ -850,7 +851,7 @@ const PayrollManager: React.FC<PayrollManagerProps> = ({
                     </div>
 
                     {/* Active Loans Table */}
-                    <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col">
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col print:hidden">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-lg text-slate-800 dark:text-white">سجل السلف الجارية</h3>
                             <div className="relative w-64 print:hidden">
