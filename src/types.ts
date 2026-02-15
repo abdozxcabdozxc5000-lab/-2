@@ -126,15 +126,19 @@ export interface BranchSettings {
     lat: number;
     lng: number;
     radius: number;
-    weekendDays: number[]; 
+    weekendDays: number[];
+    // Payroll Config
+    payrollDaysBase?: number; // e.g. 30, 26
+    payrollHoursBase?: number; // e.g. 8, 9 
+    // Attendance Rules (Now specific to branch)
+    gracePeriodMinutes?: number;
+    penaltyValue?: number;
 }
 
 export interface AppConfig {
-  gracePeriodMinutes: number;
   weightCommitment: number;
   weightOvertime: number;
   weightAbsence: number;
-  penaltyValue: number;
   holidays: Holiday[];
   office: BranchSettings;
   factory: BranchSettings;
