@@ -3,11 +3,11 @@ import React, { useState, useMemo } from 'react';
 import { Employee, CustodyRecord, ExpenseRecord, UserRole } from '../types';
 import { upsertCustody, deleteCustody, upsertExpense, deleteExpense } from '../supabaseClient';
 import { 
-    DollarSign, FileText, TrendingUp, Clock, Calendar, Briefcase, 
-    ArrowRight, Plus, Search, Trash2, CheckCircle, XCircle, AlertTriangle,
-    Moon, Sun, LogOut
+    DollarSign, FileText, TrendingUp, Clock, Briefcase, 
+    ArrowRight, Plus, Search, Trash2, CheckCircle, XCircle, 
+    Moon, Sun, LogOut, Menu, X, Filter, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface FinanceManagerProps {
     employees: Employee[];
@@ -19,76 +19,59 @@ interface FinanceManagerProps {
     onExit: () => void;
 }
 
-// --- INLINED SUB-COMPONENTS FROM YOUR FILES ---
+// --- CUSTOM UI COMPONENTS (Masrof Style) ---
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode; color: 'blue' | 'red' | 'green' | 'yellow'; darkMode: boolean }> = ({ title, value, icon, color, darkMode }) => {
-  const darkStyles = {
-    blue: { bg: 'bg-blue-600', glow: 'shadow-[0_0_15px_rgba(37,99,235,0.5)]', border: 'border-blue-500/30', text: 'text-blue-200' },
-    red: { bg: 'bg-red-600', glow: 'shadow-[0_0_15px_rgba(220,38,38,0.5)]', border: 'border-red-500/30', text: 'text-red-200' },
-    green: { bg: 'bg-emerald-500', glow: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]', border: 'border-emerald-500/30', text: 'text-emerald-200' },
-    yellow: { bg: 'bg-orange-500', glow: 'shadow-[0_0_15px_rgba(249,115,22,0.5)]', border: 'border-orange-500/30', text: 'text-orange-200' }
+  const styles = {
+    blue: { bg: 'bg-blue-500', gradient: 'from-blue-500 to-cyan-400', shadow: 'shadow-blue-500/30' },
+    red: { bg: 'bg-red-500', gradient: 'from-red-500 to-pink-500', shadow: 'shadow-red-500/30' },
+    green: { bg: 'bg-emerald-500', gradient: 'from-emerald-500 to-green-400', shadow: 'shadow-emerald-500/30' },
+    yellow: { bg: 'bg-amber-500', gradient: 'from-amber-500 to-yellow-400', shadow: 'shadow-amber-500/30' }
   };
 
-  const lightStyles = {
-    blue: { iconBg: 'bg-cyan-100 text-cyan-600', border: 'border-cyan-100' },
-    red: { iconBg: 'bg-rose-100 text-rose-600', border: 'border-rose-100' },
-    green: { iconBg: 'bg-emerald-100 text-emerald-600', border: 'border-emerald-100' },
-    yellow: { iconBg: 'bg-amber-100 text-amber-600', border: 'border-amber-100' }
-  };
+  const style = styles[color];
 
-  if (darkMode) {
-    const style = darkStyles[color];
-    return (
-        <div className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 bg-slate-800/40 backdrop-blur-md border border-white/10 group hover:-translate-y-1`}>
-          <div className={`absolute inset-0 rounded-2xl border ${style.border} group-hover:border-opacity-100 transition-colors pointer-events-none`}></div>
-          <div className={`absolute bottom-0 left-0 right-0 h-1 ${style.bg} ${style.glow}`}></div>
-          <div className="flex flex-col items-center text-center">
-            <div className={`mb-4 p-4 rounded-2xl text-white ${style.bg} ${style.glow} bg-opacity-90`}>
-              {icon}
+  return (
+    <div className={`relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300 group hover:-translate-y-1 ${darkMode ? 'bg-slate-800/60 border border-white/5' : 'bg-white border border-slate-100 shadow-xl shadow-slate-200/50'}`}>
+        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${style.gradient} opacity-10 rounded-bl-[100%] transition-opacity group-hover:opacity-20`}></div>
+        <div className="flex flex-col relative z-10">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br ${style.gradient} shadow-lg ${style.shadow} mb-4`}>
+                {React.cloneElement(icon as React.ReactElement, { size: 24 })}
             </div>
-            <h3 className="text-gray-300 text-base font-bold mb-2">{title}</h3>
-            <p className="text-3xl font-black text-white tracking-tight drop-shadow-md">{value}</p>
-          </div>
+            <h3 className={`text-sm font-bold mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{title}</h3>
+            <p className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-slate-800'}`}>{value}</p>
         </div>
-    );
-  } else {
-    const style = lightStyles[color];
-    return (
-        <div className={`relative p-6 rounded-3xl bg-white transition-transform duration-300 hover:-translate-y-2 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.08)] border-2 border-white ring-1 ring-slate-100/50`}>
-             <div className="flex flex-col items-center text-center">
-                <div className={`mb-4 p-5 rounded-2xl ${style.iconBg} shadow-sm`}>
-                    {icon}
-                </div>
-                <h3 className="text-slate-500 text-sm font-bold mb-1 tracking-wide uppercase">{title}</h3>
-                <p className="text-3xl font-black text-slate-800 tracking-tight">{value}</p>
-             </div>
-        </div>
-    )
-  }
+    </div>
+  );
 };
 
-const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; text: string; badge?: number; isCollapsed: boolean }> = ({ active, onClick, icon, text, badge, isCollapsed }) => (
+const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; text: string; badge?: number; isCollapsed: boolean; darkMode: boolean }> = ({ active, onClick, icon, text, badge, isCollapsed, darkMode }) => (
   <button
     onClick={onClick}
-    className={`group w-full flex items-center py-3 rounded-xl font-bold transition-all duration-200 relative ${
-      isCollapsed ? 'justify-center px-2' : 'px-4 gap-4 text-right'
-    } ${
+    className={`group w-full flex items-center py-4 px-4 rounded-2xl font-bold transition-all duration-300 relative overflow-hidden ${
       active
-        ? 'bg-blue-600 text-white shadow-lg -translate-y-0.5' 
-        : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-slate-300'
+        ? 'text-white shadow-lg shadow-blue-500/30' 
+        : `${darkMode ? 'text-slate-400 hover:bg-white/5 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`
     }`}
   >
-    {icon}
-    <span className={`transition-all duration-200 ${isCollapsed ? 'w-0 opacity-0' : 'flex-1 opacity-100 whitespace-nowrap'}`}>{text}</span>
-    {badge ? (
-      <span className={`text-xs font-bold rounded-full flex items-center justify-center transition-all duration-200 ${
-        isCollapsed ? 'w-0 h-0 opacity-0' : 'w-5 h-5 opacity-100'
-      } ${
-        active ? 'bg-white/20 text-white' : 'bg-red-500 text-white'
-      }`}>
-        {badge}
-      </span>
-    ) : null}
+    {active && (
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl"></div>
+    )}
+    <div className="relative z-10 flex items-center w-full">
+        <span className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+            {icon}
+        </span>
+        <span className={`mr-4 transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 flex-1'}`}>
+            {text}
+        </span>
+        {badge ? (
+        <span className={`text-[10px] font-black rounded-full h-5 min-w-[1.25rem] flex items-center justify-center px-1 transition-all ${
+            active ? 'bg-white text-blue-600' : 'bg-red-500 text-white'
+        } ${isCollapsed ? 'absolute top-2 left-2' : ''}`}>
+            {badge}
+        </span>
+        ) : null}
+    </div>
   </button>
 );
 
@@ -99,11 +82,13 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'custodies' | 'expenses'>('dashboard');
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [darkMode, setDarkMode] = useState(false); 
+    const [darkMode, setDarkMode] = useState(false); // Local dark mode for this module
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
     // Forms State
-    const [newCustody, setNewCustody] = useState({ empId: '', amount: '', desc: '' });
-    const [newExpense, setNewExpense] = useState({ amount: '', category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'custody' | 'expense' | null>(null);
+    const [formData, setFormData] = useState<any>({});
 
     // Permissions
     const canManageFinance = ['general_manager', 'owner', 'accountant', 'manager', 'office_manager'].includes(currentUserRole);
@@ -119,50 +104,59 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
         return expenses;
     }, [expenses, canManageFinance, currentUserId]);
 
-    // Stats
-    const stats = {
-        totalCustody: visibleCustodies.filter(c => c.status === 'confirmed').reduce((sum, c) => sum + c.amount, 0),
-        totalExpenses: visibleExpenses.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.amount, 0),
-        pendingExpenses: visibleExpenses.filter(e => e.status === 'pending').length,
-        balance: visibleCustodies.filter(c => c.status === 'confirmed').reduce((sum, c) => sum + c.amount, 0) - visibleExpenses.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.amount, 0)
-    };
+    // Stats Calculation
+    const stats = useMemo(() => {
+        const totalCustody = visibleCustodies.filter(c => c.status === 'confirmed').reduce((sum, c) => sum + c.amount, 0);
+        const totalExpenses = visibleExpenses.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.amount, 0);
+        return {
+            totalCustody,
+            totalExpenses,
+            pendingExpenses: visibleExpenses.filter(e => e.status === 'pending').length,
+            balance: totalCustody - totalExpenses
+        };
+    }, [visibleCustodies, visibleExpenses]);
 
     // --- HANDLERS ---
-    const handleAddCustody = async () => {
-        if (!newCustody.empId || !newCustody.amount) return;
-        const emp = employees.find(e => e.id === newCustody.empId);
-        await upsertCustody({
-            id: Date.now().toString(),
-            employeeId: newCustody.empId,
-            userName: emp?.name || 'Unknown',
-            amount: parseFloat(newCustody.amount),
-            description: newCustody.desc,
-            type: 'cash',
-            receivedDate: new Date().toISOString(),
-            status: 'confirmed' // Assuming direct confirmation for simplicity or change to 'pending'
-        });
-        setNewCustody({ empId: '', amount: '', desc: '' });
-        onUpdateData();
+    const handleOpenModal = (type: 'custody' | 'expense') => {
+        setModalType(type);
+        setFormData(type === 'custody' ? { empId: '', amount: '', desc: '' } : { amount: '', category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
+        setIsModalOpen(true);
     };
 
-    const handleAddExpense = async () => {
-        if (!newExpense.amount || !newExpense.desc) return;
-        const emp = employees.find(e => e.id === currentUserId);
-        await upsertExpense({
-            id: Date.now().toString(),
-            employeeId: currentUserId,
-            userName: emp?.name || 'Unknown',
-            amount: parseFloat(newExpense.amount),
-            category: newExpense.category,
-            description: newExpense.desc,
-            date: newExpense.date,
-            status: 'pending'
-        });
-        setNewExpense({ amount: '', category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
+    const handleSubmit = async () => {
+        if (modalType === 'custody') {
+            if (!formData.empId || !formData.amount) return;
+            const emp = employees.find(e => e.id === formData.empId);
+            await upsertCustody({
+                id: Date.now().toString(),
+                employeeId: formData.empId,
+                userName: emp?.name || 'Unknown',
+                amount: parseFloat(formData.amount),
+                description: formData.desc,
+                type: 'cash',
+                receivedDate: new Date().toISOString(),
+                status: 'confirmed'
+            });
+        } else {
+            if (!formData.amount || !formData.desc) return;
+            const emp = employees.find(e => e.id === currentUserId);
+            await upsertExpense({
+                id: Date.now().toString(),
+                employeeId: currentUserId,
+                userName: emp?.name || 'Unknown',
+                amount: parseFloat(formData.amount),
+                category: formData.category,
+                description: formData.desc,
+                date: formData.date,
+                status: 'pending'
+            });
+        }
+        setIsModalOpen(false);
         onUpdateData();
     };
 
     const handleAction = async (type: 'expense' | 'custody', id: string, status: string) => {
+        if (!confirm('هل أنت متأكد من تغيير الحالة؟')) return;
         if (type === 'expense') {
             const exp = expenses.find(e => e.id === id);
             if (exp) await upsertExpense({ ...exp, status: status as any });
@@ -174,218 +168,359 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     };
 
     const handleDelete = async (type: 'expense' | 'custody', id: string) => {
-        if (!confirm('هل أنت متأكد من الحذف؟')) return;
+        if (!confirm('هل أنت متأكد من الحذف؟ لا يمكن التراجع.')) return;
         if (type === 'expense') await deleteExpense(id);
         else await deleteCustody(id);
         onUpdateData();
     };
 
-    // --- VIEW COMPONENTS ---
+    // --- CHART DATA ---
+    const pieData = useMemo(() => {
+        const data: {[key: string]: number} = {};
+        visibleExpenses.filter(e => e.status === 'approved').forEach(e => {
+            data[e.category] = (data[e.category] || 0) + e.amount;
+        });
+        return Object.entries(data).map(([name, value]) => ({ name, value }));
+    }, [visibleExpenses]);
 
-    const DashboardView = () => {
-        const categoryData = useMemo(() => {
-            const data: {[key: string]: number} = {};
-            visibleExpenses.filter(e => e.status === 'approved').forEach(e => {
-                data[e.category] = (data[e.category] || 0) + e.amount;
-            });
-            return Object.entries(data).map(([name, value]) => ({ name, value }));
-        }, [visibleExpenses]);
-        const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+    const areaData = useMemo(() => {
+        const data: {[key: string]: number} = {};
+        // Mocking last 7 days data for visuals if not enough real data
+        const today = new Date();
+        for(let i=6; i>=0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            data[dateStr] = 0;
+        }
+        visibleExpenses.filter(e => e.status === 'approved').forEach(e => {
+            if (data[e.date] !== undefined) data[e.date] += e.amount;
+        });
+        return Object.entries(data).map(([date, amount]) => ({ 
+            date: new Date(date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }), 
+            amount 
+        }));
+    }, [visibleExpenses]);
 
-        return (
-            <div className="space-y-6 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <StatCard title="مصروفات معلقة" value={stats.pendingExpenses} icon={<Clock size={28}/>} color="yellow" darkMode={darkMode} />
-                    <StatCard title="الرصيد المتبقي" value={`${stats.balance.toLocaleString()} ج`} icon={<TrendingUp size={28}/>} color="green" darkMode={darkMode} />
-                    <StatCard title="إجمالي المصروفات" value={`${stats.totalExpenses.toLocaleString()} ج`} icon={<FileText size={28}/>} color="red" darkMode={darkMode} />
-                    <StatCard title="إجمالي العهد" value={`${stats.totalCustody.toLocaleString()} ج`} icon={<DollarSign size={28}/>} color="blue" darkMode={darkMode} />
-                </div>
+    const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className={`lg:col-span-1 rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-slate-800/40 border border-white/5' : 'bg-white border border-slate-100'}`}>
-                        <h3 className="text-lg font-bold mb-4">توزيع المصروفات</h3>
-                        <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                        {categoryData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                    <div className={`lg:col-span-2 rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-slate-800/40 border border-white/5' : 'bg-white border border-slate-100'}`}>
-                        <h3 className="text-lg font-bold mb-4">آخر العمليات</h3>
-                        <div className="space-y-3">
-                            {visibleExpenses.slice(0, 5).map(expense => (
-                                <div key={expense.id} className={`flex justify-between items-center p-4 rounded-xl border ${darkMode ? 'bg-slate-700/30 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-sm`}>
-                                            <FileText size={18} className="text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-sm">{expense.description}</p>
-                                            <p className="text-xs text-gray-500">{expense.category} • {expense.userName}</p>
-                                        </div>
-                                    </div>
-                                    <span className="font-bold text-red-500">-{expense.amount} ج</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const CustodyView = () => (
-        <div className="space-y-6 animate-fade-in">
-            {canManageFinance && (
-                <div className={`p-6 rounded-2xl shadow-sm ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus size={18}/> إضافة عهدة جديدة</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <select className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newCustody.empId} onChange={e => setNewCustody({...newCustody, empId: e.target.value})}>
-                            <option value="">اختر الموظف</option>
-                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                        </select>
-                        <input type="number" placeholder="المبلغ" className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newCustody.amount} onChange={e => setNewCustody({...newCustody, amount: e.target.value})} />
-                        <input type="text" placeholder="الوصف" className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newCustody.desc} onChange={e => setNewCustody({...newCustody, desc: e.target.value})} />
-                        <button onClick={handleAddCustody} className="bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">حفظ</button>
-                    </div>
-                </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {visibleCustodies.map(custody => (
-                    <div key={custody.id} className={`p-5 rounded-2xl border shadow-sm ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-100'}`}>
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h4 className="font-bold text-sm">{custody.userName}</h4>
-                                <p className="text-xs text-gray-500">{new Date(custody.receivedDate).toLocaleDateString('ar-EG')}</p>
-                            </div>
-                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${custody.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100'}`}>{custody.status}</span>
-                        </div>
-                        <p className="text-2xl font-black mb-2">{custody.amount.toLocaleString()} ج</p>
-                        <p className="text-xs text-gray-500">{custody.description}</p>
-                        {canManageFinance && <button onClick={() => handleDelete('custody', custody.id)} className="mt-4 text-red-500 text-xs flex items-center gap-1"><Trash2 size={12}/> حذف</button>}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    const ExpenseView = () => (
-        <div className="space-y-6 animate-fade-in">
-            <div className={`p-6 rounded-2xl shadow-sm ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus size={18}/> تسجيل مصروف</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <input type="number" placeholder="المبلغ" className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} />
-                    <select className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})}>
-                        <option value="عام">عام</option>
-                        <option value="وقود">وقود</option>
-                        <option value="ضيافة">ضيافة</option>
-                        <option value="صيانة">صيانة</option>
-                    </select>
-                    <input type="text" placeholder="الوصف" className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newExpense.desc} onChange={e => setNewExpense({...newExpense, desc: e.target.value})} />
-                    <input type="date" className="p-3 rounded-xl border bg-gray-50 dark:bg-slate-700 dark:border-slate-600" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} />
-                    <button onClick={handleAddExpense} className="bg-red-600 text-white rounded-xl font-bold hover:bg-red-700">تسجيل</button>
-                </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {visibleExpenses.map(expense => (
-                    <div key={expense.id} className={`p-5 rounded-2xl border shadow-sm ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-100'}`}>
-                        <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold">{expense.category}</h4>
-                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${expense.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : expense.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{expense.status}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-2">{expense.userName} • {expense.date}</p>
-                        <p className="text-xl font-black text-red-500">{expense.amount} ج</p>
-                        <p className="text-sm text-gray-600 mt-2">{expense.description}</p>
-                        {canManageFinance && expense.status === 'pending' && (
-                            <div className="flex gap-2 mt-4">
-                                <button onClick={() => handleAction('expense', expense.id, 'approved')} className="flex-1 bg-emerald-100 text-emerald-700 py-2 rounded-lg text-xs font-bold">قبول</button>
-                                <button onClick={() => handleAction('expense', expense.id, 'rejected')} className="flex-1 bg-red-100 text-red-700 py-2 rounded-lg text-xs font-bold">رفض</button>
-                            </div>
-                        )}
-                        {canManageFinance && (
-                             <button onClick={() => handleDelete('expense', expense.id)} className="mt-2 text-slate-400 hover:text-red-500 text-xs flex items-center gap-1"><Trash2 size={12}/> حذف</button>
-                        )}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    // --- MAIN RENDER ---
-    const sidebarClasses = darkMode
-    ? 'bg-slate-900/90 backdrop-blur-xl border-l border-white/10 text-white'
-    : 'bg-white/80 backdrop-blur-2xl border-l border-white/50 text-slate-700';
-
+    // --- RENDER ---
     return (
-        <div className={`fixed inset-0 z-50 flex h-screen font-['Cairo'] text-right transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-white' : 'bg-[#f3f4f6] text-gray-800'}`} dir="rtl">
+        <div className={`fixed inset-0 z-50 flex h-screen font-['Cairo'] text-right transition-colors duration-500 ${darkMode ? 'bg-[#0f172a] text-white' : 'bg-[#f8fafc] text-slate-800'}`} dir="rtl">
             
-            {/* Background Gradient */}
-            <div className={`fixed inset-0 -z-10 overflow-hidden`}>
-                {!darkMode && (
-                    <>
-                        <div className="absolute top-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-                        <div className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-                        <div className="absolute -bottom-8 left-20 w-[50vw] h-[50vw] bg-yellow-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
-                    </>
-                )}
+            {/* BACKGROUND BLOBS */}
+            <div className={`fixed inset-0 -z-10 overflow-hidden pointer-events-none`}>
+                <div className={`absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] bg-blue-500/20 rounded-full blur-[100px] animate-pulse`}></div>
+                <div className={`absolute bottom-[-10%] left-[-5%] w-[40vw] h-[40vw] bg-purple-500/20 rounded-full blur-[100px] animate-pulse animation-delay-2000`}></div>
             </div>
 
-            {/* Sidebar */}
-            <aside className={`transition-all duration-300 ease-in-out h-full z-40 ${sidebarClasses} ${isCollapsed ? 'w-24' : 'w-72'} flex flex-col`}>
-                <div className="flex items-center p-6 h-24 border-b border-gray-100 dark:border-white/10 justify-between">
+            {/* SIDEBAR */}
+            <aside className={`
+                fixed inset-y-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l border-slate-200 dark:border-slate-800 transition-all duration-300 flex flex-col
+                ${isCollapsed ? 'w-24' : 'w-72'}
+                ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+            `}>
+                <div className="h-24 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                            <DollarSign size={24} />
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 shrink-0">
+                            <DollarSign size={22} />
                         </div>
-                        <h1 className={`text-xl font-extrabold whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
-                            الإدارة المالية
+                        <h1 className={`text-2xl font-black tracking-tight transition-opacity duration-300 ${isCollapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+                            مصروف
                         </h1>
                     </div>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-500 hover:text-red-500"><X /></button>
                 </div>
 
-                <nav className="flex-1 px-4 py-6 space-y-3 overflow-y-auto">
-                    <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<TrendingUp />} text="لوحة التحكم" isCollapsed={isCollapsed} />
-                    <NavButton active={activeTab === 'custodies'} onClick={() => setActiveTab('custodies')} icon={<Briefcase />} text="سجل العهد" isCollapsed={isCollapsed} />
-                    <NavButton active={activeTab === 'expenses'} onClick={() => setActiveTab('expenses')} icon={<FileText />} text="المصروفات" badge={stats.pendingExpenses} isCollapsed={isCollapsed} />
-                </nav>
+                <div className="flex-1 px-4 py-6 space-y-3 overflow-y-auto">
+                    <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<TrendingUp size={20}/>} text="نظرة عامة" isCollapsed={isCollapsed} darkMode={darkMode} />
+                    <NavButton active={activeTab === 'custodies'} onClick={() => setActiveTab('custodies')} icon={<Briefcase size={20}/>} text="سجل العهد" isCollapsed={isCollapsed} darkMode={darkMode} />
+                    <NavButton active={activeTab === 'expenses'} onClick={() => setActiveTab('expenses')} icon={<FileText size={20}/>} text="المصروفات" badge={stats.pendingExpenses} isCollapsed={isCollapsed} darkMode={darkMode} />
+                </div>
 
-                <div className="p-6 border-t border-gray-100 dark:border-white/10 space-y-4">
-                    <button onClick={() => setDarkMode(!darkMode)} className={`w-full p-3 rounded-xl border flex items-center justify-center transition-all ${darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
-                        {darkMode ? <Sun className="text-yellow-400"/> : <Moon className="text-blue-500"/>}
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <button onClick={() => setDarkMode(!darkMode)} className={`w-full p-4 rounded-2xl flex items-center justify-center transition-all ${darkMode ? 'bg-slate-800 text-yellow-400' : 'bg-slate-100 text-slate-600'}`}>
+                        {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
                     </button>
-                    <button onClick={onExit} className={`w-full p-3 rounded-xl border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 font-bold flex items-center justify-center gap-2 transition-all`}>
-                        <ArrowRight size={18} /> {!isCollapsed && 'خروج للنظام'}
+                    <button onClick={onExit} className={`w-full p-4 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${darkMode ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}>
+                        <LogOut size={20} /> 
+                        {!isCollapsed && <span>خروج</span>}
                     </button>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-hidden flex flex-col h-full relative">
-                <header className={`h-20 flex items-center justify-between px-8 backdrop-blur-md z-30 ${darkMode ? 'bg-slate-900/50' : 'bg-white/50'}`}>
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-white">
-                        {activeTab === 'dashboard' && 'نظرة عامة'}
-                        {activeTab === 'custodies' && 'إدارة العهد'}
-                        {activeTab === 'expenses' && 'المصروفات اليومية'}
-                    </h2>
-                    
+            {/* MAIN CONTENT */}
+            <main className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 ${isCollapsed ? 'lg:mr-24' : 'lg:mr-72'}`}>
+                
+                {/* HEADER */}
+                <header className="h-24 px-8 flex items-center justify-between z-30">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm"><Menu /></button>
+                        <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:flex p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm text-slate-500 hover:text-blue-600">
+                            {isCollapsed ? <ChevronLeft /> : <ChevronRight />}
+                        </button>
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-800 dark:text-white">
+                                {activeTab === 'dashboard' && 'لوحة المعلومات'}
+                                {activeTab === 'custodies' && 'إدارة العهد'}
+                                {activeTab === 'expenses' && 'سجل المصروفات'}
+                            </h2>
+                            <p className="text-xs text-slate-500 font-bold mt-1">
+                                {new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">متصل الآن</span>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300 border-2 border-white dark:border-slate-600 shadow-md">
                             {employees.find(e => e.id === currentUserId)?.name.charAt(0)}
                         </div>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
-                    {activeTab === 'dashboard' && <DashboardView />}
-                    {activeTab === 'custodies' && <CustodyView />}
-                    {activeTab === 'expenses' && <ExpenseView />}
+                {/* CONTENT AREA */}
+                <div className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-hide">
+                    {activeTab === 'dashboard' && (
+                        <div className="space-y-8 animate-fade-in">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <StatCard title="الرصيد الحالي" value={`${stats.balance.toLocaleString()} ج`} icon={<DollarSign/>} color="blue" darkMode={darkMode} />
+                                <StatCard title="إجمالي المصروفات" value={`${stats.totalExpenses.toLocaleString()} ج`} icon={<TrendingUp/>} color="red" darkMode={darkMode} />
+                                <StatCard title="إجمالي العهد" value={`${stats.totalCustody.toLocaleString()} ج`} icon={<Briefcase/>} color="green" darkMode={darkMode} />
+                                <StatCard title="طلبات معلقة" value={stats.pendingExpenses} icon={<Clock/>} color="yellow" darkMode={darkMode} />
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <div className={`lg:col-span-2 p-6 rounded-[2.5rem] shadow-sm ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-100'}`}>
+                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><TrendingUp className="text-blue-500"/> النشاط اليومي</h3>
+                                    <div className="h-72">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={areaData}>
+                                                <defs>
+                                                    <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 12}} />
+                                                <YAxis axisLine={false} tickLine={false} tick={{fill: darkMode ? '#94a3b8' : '#64748b', fontSize: 12}} />
+                                                <Tooltip contentStyle={{backgroundColor: darkMode ? '#1e293b' : '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'}} />
+                                                <Area type="monotone" dataKey="amount" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorAmount)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                <div className={`p-6 rounded-[2.5rem] shadow-sm ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-100'}`}>
+                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><FileText className="text-purple-500"/> التوزيع</h3>
+                                    <div className="h-64 relative">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                                    {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <div className="text-center">
+                                                <span className="block text-2xl font-black text-slate-800 dark:text-white">{stats.totalExpenses}</span>
+                                                <span className="text-xs text-slate-400">إجمالي</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 space-y-2">
+                                        {pieData.slice(0, 3).map((entry, i) => (
+                                            <div key={i} className="flex items-center justify-between text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[i % COLORS.length]}}></div>
+                                                    <span className="text-slate-600 dark:text-slate-300">{entry.name}</span>
+                                                </div>
+                                                <span className="font-bold text-slate-800 dark:text-white">{entry.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'custodies' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="flex justify-between items-center">
+                                <div className="relative max-w-md w-full">
+                                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
+                                    <input type="text" placeholder="بحث في العهد..." className={`w-full pr-12 pl-4 py-4 rounded-2xl outline-none transition-all ${darkMode ? 'bg-slate-800 text-white placeholder-slate-500' : 'bg-white text-slate-800 shadow-sm'}`} />
+                                </div>
+                                {canManageFinance && (
+                                    <button onClick={() => handleOpenModal('custody')} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:-translate-y-1">
+                                        <Plus size={20} /> عهدة جديدة
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {visibleCustodies.map(custody => (
+                                    <div key={custody.id} className={`p-6 rounded-[2rem] border transition-all hover:-translate-y-1 group relative ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-lg'}`}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                                    {custody.userName.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800 dark:text-white">{custody.userName}</h4>
+                                                    <p className="text-xs text-slate-500">{new Date(custody.receivedDate).toLocaleDateString('ar-EG')}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-xl text-xs font-bold ${custody.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {custody.status === 'confirmed' ? 'نشط' : 'معلق'}
+                                            </span>
+                                        </div>
+                                        <div className="mb-4">
+                                            <p className="text-3xl font-black text-slate-800 dark:text-white">{custody.amount.toLocaleString()} <span className="text-sm text-slate-400 font-medium">ج.م</span></p>
+                                            <p className="text-sm text-slate-500 mt-2 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl">{custody.description}</p>
+                                        </div>
+                                        {canManageFinance && (
+                                            <button onClick={() => handleDelete('custody', custody.id)} className="absolute top-6 left-6 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                                <Trash2 size={20} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'expenses' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="flex justify-between items-center">
+                                <div className="relative max-w-md w-full">
+                                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
+                                    <input type="text" placeholder="بحث في المصروفات..." className={`w-full pr-12 pl-4 py-4 rounded-2xl outline-none transition-all ${darkMode ? 'bg-slate-800 text-white placeholder-slate-500' : 'bg-white text-slate-800 shadow-sm'}`} />
+                                </div>
+                                <button onClick={() => handleOpenModal('expense')} className="flex items-center gap-2 bg-red-500 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-red-500/30 hover:bg-red-600 transition-all hover:-translate-y-1">
+                                    <Plus size={20} /> مصروف جديد
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {visibleExpenses.map(expense => (
+                                    <div key={expense.id} className={`p-6 rounded-[2rem] border transition-all hover:-translate-y-1 group ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm hover:shadow-lg'}`}>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${expense.category === 'وقود' ? 'bg-amber-500' : expense.category === 'صيانة' ? 'bg-slate-600' : 'bg-red-500'}`}>
+                                                    <FileText size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800 dark:text-white">{expense.category}</h4>
+                                                    <p className="text-xs text-slate-500">{expense.userName} • {expense.date}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-xl text-xs font-bold ${
+                                                expense.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 
+                                                expense.status === 'rejected' ? 'bg-red-100 text-red-700' : 
+                                                'bg-amber-100 text-amber-700'
+                                            }`}>
+                                                {expense.status === 'approved' ? 'معتمد' : expense.status === 'rejected' ? 'مرفوض' : 'معلق'}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl line-clamp-2 h-16">{expense.description}</p>
+                                        <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-700 pt-4">
+                                            <p className="text-2xl font-black text-slate-800 dark:text-white">{expense.amount} <span className="text-sm text-slate-400">ج.م</span></p>
+                                            
+                                            <div className="flex gap-2">
+                                                {canManageFinance && expense.status === 'pending' && (
+                                                    <>
+                                                        <button onClick={() => handleAction('expense', expense.id, 'approved')} className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100"><CheckCircle size={20}/></button>
+                                                        <button onClick={() => handleAction('expense', expense.id, 'rejected')} className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100"><XCircle size={20}/></button>
+                                                    </>
+                                                )}
+                                                {canManageFinance && (
+                                                    <button onClick={() => handleDelete('expense', expense.id)} className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50"><Trash2 size={20}/></button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
+
+            {/* MODAL */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className={`w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative animate-scale-in ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        <button onClick={() => setIsModalOpen(false)} className="absolute top-6 left-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><X /></button>
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-6">
+                            {modalType === 'custody' ? 'إضافة عهدة جديدة' : 'تسجيل مصروف جديد'}
+                        </h3>
+                        
+                        <div className="space-y-4">
+                            {modalType === 'custody' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-500 mb-2">الموظف</label>
+                                    <select 
+                                        value={formData.empId} 
+                                        onChange={e => setFormData({...formData, empId: e.target.value})}
+                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">-- اختر الموظف --</option>
+                                        {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            
+                            <div>
+                                <label className="block text-sm font-bold text-slate-500 mb-2">المبلغ (ج.م)</label>
+                                <input 
+                                    type="number" 
+                                    value={formData.amount} 
+                                    onChange={e => setFormData({...formData, amount: e.target.value})}
+                                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg text-center"
+                                    placeholder="0.00"
+                                />
+                            </div>
+
+                            {modalType === 'expense' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-500 mb-2">التصنيف</label>
+                                    <select 
+                                        value={formData.category} 
+                                        onChange={e => setFormData({...formData, category: e.target.value})}
+                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="عام">عام</option>
+                                        <option value="وقود">وقود</option>
+                                        <option value="صيانة">صيانة</option>
+                                        <option value="ضيافة">ضيافة</option>
+                                        <option value="خامات">خامات</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-500 mb-2">الوصف / التفاصيل</label>
+                                <textarea 
+                                    value={formData.desc} 
+                                    onChange={e => setFormData({...formData, desc: e.target.value})}
+                                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 resize-none h-32"
+                                    placeholder="اكتب التفاصيل هنا..."
+                                />
+                            </div>
+
+                            <button onClick={handleSubmit} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all hover:-translate-y-1">
+                                حفظ البيانات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
