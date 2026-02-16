@@ -74,14 +74,17 @@ export interface PayrollRecord {
     generatedAt: string;
 }
 
-// --- UPDATED FINANCE TYPES TO MATCH YOUR FILES ---
+// --- UPDATED FINANCE TYPES ---
 export interface CustodyRecord {
     id: string;
     employeeId: string;
     userName: string;
     amount: number;
-    description: string; // added to match standard
-    type: string; // 'cash' | 'equipment' etc
+    description: string;
+    type: string; // This will now act as "Classification" (e.g. Factory Custody)
+    category?: string; // Optional: Kept for compatibility or specific grouping
+    paymentMethod?: string; // Cash, Transfer, etc.
+    source?: string; // Belal, Maged, Bank, etc.
     receivedDate: string;
     status: 'pending' | 'confirmed';
 }

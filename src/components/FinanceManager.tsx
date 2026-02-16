@@ -5,7 +5,7 @@ import { upsertCustody, deleteCustody, upsertExpense, deleteExpense } from '../s
 import { 
     DollarSign, FileText, TrendingUp, Clock, Briefcase, 
     ArrowRight, Plus, Search, Trash2, CheckCircle, XCircle, 
-    Moon, Sun, LogOut, Menu, X, ChevronLeft, ChevronRight, Settings, Tag
+    Moon, Sun, LogOut, Menu, X, ChevronLeft, ChevronRight, Settings, Tag, Wallet, CreditCard, User
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
@@ -21,7 +21,11 @@ interface FinanceManagerProps {
 
 // --- DEFAULTS ---
 const DEFAULT_CATEGORIES = ['عام', 'وقود', 'صيانة', 'ضيافة', 'خامات', 'نثرية', 'كهرباء', 'إيجار'];
-const DEFAULT_CUSTODY_TYPES = ['نقدية', 'شيك', 'بضاعة', 'أدوات', 'وقود', 'أخرى'];
+
+// Custody Specific Defaults
+const DEFAULT_CUSTODY_CLASSIFICATIONS = ['عهدة مصنع', 'عهدة مكتب', 'عهدة سيارة', 'عهدة مشروع'];
+const DEFAULT_PAYMENT_METHODS = ['كاش (نقدية)', 'تحويل بنكي', 'شيك', 'فودافون كاش'];
+const DEFAULT_SOURCES = ['بلال', 'ماجد', 'خزينة المكتب', 'حساب الشركة - بنك مصر', 'حساب الشركة - CIB'];
 
 // --- CUSTOM UI COMPONENTS (Inline) ---
 
@@ -89,31 +93,40 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     const [darkMode, setDarkMode] = useState(false); 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
-    // --- Dynamic Categories State ---
+    // --- Dynamic Lists State ---
     const [expenseCategories, setExpenseCategories] = useState<string[]>(() => {
         const saved = localStorage.getItem('mowazeb_expense_categories');
         return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
     });
-    
-    const [custodyTypes, setCustodyTypes] = useState<string[]>(() => {
-        const saved = localStorage.getItem('mowazeb_custody_types');
-        return saved ? JSON.parse(saved) : DEFAULT_CUSTODY_TYPES;
+
+    const [custodyClassifications, setCustodyClassifications] = useState<string[]>(() => {
+        const saved = localStorage.getItem('mowazeb_custody_classifications');
+        return saved ? JSON.parse(saved) : DEFAULT_CUSTODY_CLASSIFICATIONS;
+    });
+
+    const [paymentMethods, setPaymentMethods] = useState<string[]>(() => {
+        const saved = localStorage.getItem('mowazeb_payment_methods');
+        return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_METHODS;
+    });
+
+    const [fundingSources, setFundingSources] = useState<string[]>(() => {
+        const saved = localStorage.getItem('mowazeb_funding_sources');
+        return saved ? JSON.parse(saved) : DEFAULT_SOURCES;
     });
 
     const [newItemInput, setNewItemInput] = useState('');
-
-    useEffect(() => {
-        localStorage.setItem('mowazeb_expense_categories', JSON.stringify(expenseCategories));
-    }, [expenseCategories]);
-
-    useEffect(() => {
-        localStorage.setItem('mowazeb_custody_types', JSON.stringify(custodyTypes));
-    }, [custodyTypes]);
-
+    
     // Forms State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCustodySettingsOpen, setIsCustodySettingsOpen] = useState(false);
     const [modalType, setModalType] = useState<'custody' | 'expense' | null>(null);
     const [formData, setFormData] = useState<any>({});
+
+    // Persistence Effects
+    useEffect(() => { localStorage.setItem('mowazeb_expense_categories', JSON.stringify(expenseCategories)); }, [expenseCategories]);
+    useEffect(() => { localStorage.setItem('mowazeb_custody_classifications', JSON.stringify(custodyClassifications)); }, [custodyClassifications]);
+    useEffect(() => { localStorage.setItem('mowazeb_payment_methods', JSON.stringify(paymentMethods)); }, [paymentMethods]);
+    useEffect(() => { localStorage.setItem('mowazeb_funding_sources', JSON.stringify(fundingSources)); }, [fundingSources]);
 
     // Permissions
     const canManageFinance = ['general_manager', 'owner', 'accountant', 'manager', 'office_manager'].includes(currentUserRole);
@@ -144,12 +157,20 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     // --- HANDLERS ---
     const handleOpenModal = (type: 'custody' | 'expense') => {
         setModalType(type);
-        // Default to first item in dynamic list
         const defaultCategory = expenseCategories.length > 0 ? expenseCategories[0] : 'عام';
-        const defaultType = custodyTypes.length > 0 ? custodyTypes[0] : 'نقدية';
+        const defaultClass = custodyClassifications.length > 0 ? custodyClassifications[0] : 'عهدة مكتب';
+        const defaultMethod = paymentMethods.length > 0 ? paymentMethods[0] : 'كاش';
+        const defaultSource = fundingSources.length > 0 ? fundingSources[0] : 'الخزينة';
 
         setFormData(type === 'custody' 
-            ? { empId: '', amount: '', desc: '', type: defaultType } 
+            ? { 
+                empId: '', 
+                amount: '', 
+                desc: '', 
+                classification: defaultClass,
+                paymentMethod: defaultMethod,
+                source: defaultSource 
+              } 
             : { amount: '', category: defaultCategory, desc: '', date: new Date().toISOString().split('T')[0] }
         );
         setIsModalOpen(true);
@@ -165,7 +186,9 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 userName: emp?.name || 'Unknown',
                 amount: parseFloat(formData.amount),
                 description: formData.desc,
-                type: formData.type || 'نقدية',
+                type: formData.classification,
+                paymentMethod: formData.paymentMethod,
+                source: formData.source,
                 receivedDate: new Date().toISOString(),
                 status: 'confirmed'
             });
@@ -206,31 +229,29 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
         onUpdateData();
     };
 
-    // --- SETTINGS HANDLERS ---
+    // --- SETTINGS LIST HANDLERS (Generic) ---
+    const addItemToList = (list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
+        if (item && !list.includes(item)) {
+            setList([...list, item]);
+        }
+    };
+
+    const removeItemFromList = (list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
+        if (confirm(`حذف "${item}" من القائمة؟`)) {
+            setList(list.filter(i => i !== item));
+        }
+    };
+
+    // Fix: Missing handlers for Expense Categories settings
     const addCategory = () => {
-        if (newItemInput && !expenseCategories.includes(newItemInput)) {
-            setExpenseCategories([...expenseCategories, newItemInput]);
+        if (newItemInput) {
+            addItemToList(expenseCategories, setExpenseCategories, newItemInput);
             setNewItemInput('');
         }
     };
 
-    const removeCategory = (cat: string) => {
-        if (confirm(`حذف التصنيف "${cat}"؟`)) {
-            setExpenseCategories(expenseCategories.filter(c => c !== cat));
-        }
-    };
-
-    const addCustodyType = () => {
-        if (newItemInput && !custodyTypes.includes(newItemInput)) {
-            setCustodyTypes([...custodyTypes, newItemInput]);
-            setNewItemInput('');
-        }
-    };
-
-    const removeCustodyType = (type: string) => {
-        if (confirm(`حذف النوع "${type}"؟`)) {
-            setCustodyTypes(custodyTypes.filter(t => t !== type));
-        }
+    const removeCategory = (item: string) => {
+        removeItemFromList(expenseCategories, setExpenseCategories, item);
     };
 
     // --- CHART DATA ---
@@ -345,7 +366,9 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 
                 {/* CONTENT AREA */}
                 <div className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-hide">
+                    
                     {activeTab === 'dashboard' && (
+                        // ... existing dashboard code ...
                         <div className="space-y-8 animate-fade-in">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <StatCard title="الرصيد الحالي" value={`${stats.balance.toLocaleString()} ج`} icon={<DollarSign/>} color="blue" darkMode={darkMode} />
@@ -353,7 +376,7 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                 <StatCard title="إجمالي العهد" value={`${stats.totalCustody.toLocaleString()} ج`} icon={<Briefcase/>} color="green" darkMode={darkMode} />
                                 <StatCard title="طلبات معلقة" value={stats.pendingExpenses} icon={<Clock/>} color="yellow" darkMode={darkMode} />
                             </div>
-
+                            {/* Charts */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 <div className={`lg:col-span-2 p-6 rounded-[2.5rem] shadow-sm ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-100'}`}>
                                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><TrendingUp className="text-blue-500"/> النشاط اليومي</h3>
@@ -375,7 +398,6 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
-
                                 <div className={`p-6 rounded-[2.5rem] shadow-sm ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-100'}`}>
                                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><FileText className="text-purple-500"/> التوزيع</h3>
                                     <div className="h-64 relative">
@@ -412,15 +434,24 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 
                     {activeTab === 'custodies' && (
                         <div className="space-y-6 animate-fade-in">
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-4 flex-wrap">
                                 <div className="relative max-w-md w-full">
                                     <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
                                     <input type="text" placeholder="بحث في العهد..." className={`w-full pr-12 pl-4 py-4 rounded-2xl outline-none transition-all ${darkMode ? 'bg-slate-800 text-white placeholder-slate-500' : 'bg-white text-slate-800 shadow-sm'}`} />
                                 </div>
                                 {canManageFinance && (
-                                    <button onClick={() => handleOpenModal('custody')} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:-translate-y-1">
-                                        <Plus size={20} /> عهدة جديدة
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={() => setIsCustodySettingsOpen(true)}
+                                            className="flex items-center gap-2 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-4 py-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                            title="تصنيفات العهد"
+                                        >
+                                            <Settings size={20} /> تصنيفات العهد
+                                        </button>
+                                        <button onClick={() => handleOpenModal('custody')} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:-translate-y-1">
+                                            <Plus size={20} /> عهدة جديدة
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 
@@ -443,8 +474,9 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                         </div>
                                         <div className="mb-4">
                                             <p className="text-3xl font-black text-slate-800 dark:text-white">{custody.amount.toLocaleString()} <span className="text-sm text-slate-400 font-medium">ج.م</span></p>
-                                            <div className="flex gap-2 mt-2">
-                                                <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-bold">{custody.type}</span>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                <span className="text-[10px] px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-bold">{custody.type}</span>
+                                                {custody.source && <span className="text-[10px] px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg font-bold">{custody.source}</span>}
                                                 <p className="text-sm text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-2 py-1 rounded-lg flex-1 truncate">{custody.description}</p>
                                             </div>
                                         </div>
@@ -516,65 +548,33 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 
                     {activeTab === 'settings' && (
                         <div className="space-y-8 animate-fade-in">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Expense Categories Management */}
-                                <div className={`p-8 rounded-[2.5rem] shadow-sm border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                    <h3 className="font-bold text-xl text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                                        <Tag className="text-blue-500" /> تصنيفات المصروفات
-                                    </h3>
-                                    
-                                    <div className="flex gap-2 mb-6">
-                                        <input 
-                                            type="text" 
-                                            placeholder="إضافة تصنيف جديد..." 
-                                            value={newItemInput}
-                                            onChange={e => setNewItemInput(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && addCategory()}
-                                            className={`flex-1 p-4 rounded-xl outline-none border ${darkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-slate-50 border-slate-200'}`}
-                                        />
-                                        <button onClick={addCategory} className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl shadow-lg transition-all">
-                                            <Plus />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        {expenseCategories.map(cat => (
-                                            <div key={cat} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border ${darkMode ? 'bg-slate-900 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-                                                {cat}
-                                                <button onClick={() => removeCategory(cat)} className="hover:text-red-500 transition-colors"><X size={14}/></button>
-                                            </div>
-                                        ))}
-                                    </div>
+                            {/* Original Settings Content: Expense Categories */}
+                            <div className={`p-8 rounded-[2.5rem] shadow-sm border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <h3 className="font-bold text-xl text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                                    <Tag className="text-blue-500" /> تصنيفات المصروفات
+                                </h3>
+                                
+                                <div className="flex gap-2 mb-6">
+                                    <input 
+                                        type="text" 
+                                        placeholder="إضافة تصنيف جديد..." 
+                                        value={newItemInput}
+                                        onChange={e => setNewItemInput(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && addCategory()}
+                                        className={`flex-1 p-4 rounded-xl outline-none border ${darkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-slate-50 border-slate-200'}`}
+                                    />
+                                    <button onClick={addCategory} className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl shadow-lg transition-all">
+                                        <Plus />
+                                    </button>
                                 </div>
 
-                                {/* Custody Types Management */}
-                                <div className={`p-8 rounded-[2.5rem] shadow-sm border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                    <h3 className="font-bold text-xl text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                                        <Briefcase className="text-emerald-500" /> أنواع العهد
-                                    </h3>
-                                    
-                                    <div className="flex gap-2 mb-6">
-                                        <input 
-                                            type="text" 
-                                            placeholder="إضافة نوع جديد..." 
-                                            value={newItemInput}
-                                            onChange={e => setNewItemInput(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && addCustodyType()}
-                                            className={`flex-1 p-4 rounded-xl outline-none border ${darkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-slate-50 border-slate-200'}`}
-                                        />
-                                        <button onClick={addCustodyType} className="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-xl shadow-lg transition-all">
-                                            <Plus />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        {custodyTypes.map(type => (
-                                            <div key={type} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border ${darkMode ? 'bg-slate-900 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-                                                {type}
-                                                <button onClick={() => removeCustodyType(type)} className="hover:text-red-500 transition-colors"><X size={14}/></button>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {expenseCategories.map(cat => (
+                                        <div key={cat} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border ${darkMode ? 'bg-slate-900 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                            {cat}
+                                            <button onClick={() => removeCategory(cat)} className="hover:text-red-500 transition-colors"><X size={14}/></button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -582,7 +582,78 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 </div>
             </main>
 
-            {/* MODAL */}
+            {/* --- CUSTODY SETTINGS MODAL (New) --- */}
+            {isCustodySettingsOpen && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className={`w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl relative animate-scale-in overflow-y-auto max-h-[90vh] ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                        <button onClick={() => setIsCustodySettingsOpen(false)} className="absolute top-6 left-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><X /></button>
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-8 flex items-center gap-2">
+                            <Settings className="text-blue-500" /> إعدادات تصنيفات العهد
+                        </h3>
+
+                        <div className="space-y-8">
+                            {/* Classifications */}
+                            <div>
+                                <h4 className="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2"><Briefcase size={18}/> أنواع العهد</h4>
+                                <div className="flex gap-2 mb-3">
+                                    <input type="text" id="newClass" placeholder="مثال: عهدة مصنع" className="flex-1 p-3 rounded-xl border outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
+                                    <button onClick={() => {
+                                        const val = (document.getElementById('newClass') as HTMLInputElement).value;
+                                        if(val) { addItemToList(custodyClassifications, setCustodyClassifications, val); (document.getElementById('newClass') as HTMLInputElement).value = ''; }
+                                    }} className="bg-blue-600 text-white p-3 rounded-xl"><Plus/></button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {custodyClassifications.map(c => (
+                                        <span key={c} className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs font-bold flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                            {c} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => removeItemFromList(custodyClassifications, setCustodyClassifications, c)} />
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Payment Methods */}
+                            <div>
+                                <h4 className="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2"><CreditCard size={18}/> طرق الاستلام</h4>
+                                <div className="flex gap-2 mb-3">
+                                    <input type="text" id="newMethod" placeholder="مثال: تحويل بنكي" className="flex-1 p-3 rounded-xl border outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
+                                    <button onClick={() => {
+                                        const val = (document.getElementById('newMethod') as HTMLInputElement).value;
+                                        if(val) { addItemToList(paymentMethods, setPaymentMethods, val); (document.getElementById('newMethod') as HTMLInputElement).value = ''; }
+                                    }} className="bg-emerald-600 text-white p-3 rounded-xl"><Plus/></button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {paymentMethods.map(c => (
+                                        <span key={c} className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs font-bold flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                            {c} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => removeItemFromList(paymentMethods, setPaymentMethods, c)} />
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Funding Sources */}
+                            <div>
+                                <h4 className="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2"><Wallet size={18}/> المصدر (الجهة الممولة)</h4>
+                                <div className="flex gap-2 mb-3">
+                                    <input type="text" id="newSource" placeholder="مثال: خزينة الشركة" className="flex-1 p-3 rounded-xl border outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
+                                    <button onClick={() => {
+                                        const val = (document.getElementById('newSource') as HTMLInputElement).value;
+                                        if(val) { addItemToList(fundingSources, setFundingSources, val); (document.getElementById('newSource') as HTMLInputElement).value = ''; }
+                                    }} className="bg-purple-600 text-white p-3 rounded-xl"><Plus/></button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {fundingSources.map(c => (
+                                        <span key={c} className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs font-bold flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                            {c} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => removeItemFromList(fundingSources, setFundingSources, c)} />
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MAIN ADD/EDIT MODAL */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
                     <div className={`w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative animate-scale-in ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
@@ -595,24 +666,53 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                             {modalType === 'custody' && (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-500 mb-2">الموظف</label>
+                                        <label className="block text-sm font-bold text-slate-500 mb-2">الموظف المستلم</label>
+                                        <div className="relative">
+                                            <select 
+                                                value={formData.empId} 
+                                                onChange={e => setFormData({...formData, empId: e.target.value})}
+                                                className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                            >
+                                                <option value="">-- اختر الموظف --</option>
+                                                {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                            </select>
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Dynamic Custody Classification */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-500 mb-2">تصنيف العهدة</label>
                                         <select 
-                                            value={formData.empId} 
-                                            onChange={e => setFormData({...formData, empId: e.target.value})}
+                                            value={formData.classification} 
+                                            onChange={e => setFormData({...formData, classification: e.target.value})}
                                             className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value="">-- اختر الموظف --</option>
-                                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                            {custodyClassifications.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                     </div>
+
+                                    {/* Dynamic Payment Method */}
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-500 mb-2">نوع العهدة</label>
+                                        <label className="block text-sm font-bold text-slate-500 mb-2">طريقة الاستلام</label>
                                         <select 
-                                            value={formData.type} 
-                                            onChange={e => setFormData({...formData, type: e.target.value})}
+                                            value={formData.paymentMethod} 
+                                            onChange={e => setFormData({...formData, paymentMethod: e.target.value})}
                                             className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            {custodyTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                            {paymentMethods.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* Dynamic Funding Source */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-500 mb-2">المصدر (وارد من)</label>
+                                        <select 
+                                            value={formData.source} 
+                                            onChange={e => setFormData({...formData, source: e.target.value})}
+                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {fundingSources.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                     </div>
                                 </>
