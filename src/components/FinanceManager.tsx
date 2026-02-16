@@ -4,7 +4,8 @@ import { Employee, CustodyRecord, ExpenseRecord, UserRole } from '../types';
 import { upsertCustody, deleteCustody, upsertExpense, deleteExpense } from '../supabaseClient';
 import { 
     Wallet, DollarSign, Plus, Trash2, Calendar, FileText, 
-    ArrowLeft, Search, CheckCircle, XCircle, Clock, Filter, Briefcase
+    ArrowLeft, Search, CheckCircle, XCircle, Clock, Briefcase, 
+    TrendingUp, AlertTriangle, Filter
 } from 'lucide-react';
 
 interface FinanceManagerProps {
@@ -22,18 +23,18 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'custodies' | 'expenses'>('custodies');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     
     // Forms
-    const [newCustody, setNewCustody] = useState<{empId: string, amount: number, desc: string}>({ empId: '', amount: 0, desc: '' });
-    const [newExpense, setNewExpense] = useState<{amount: number, category: string, desc: string, date: string}>({ amount: 0, category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
+    const [newCustody, setNewCustody] = useState<{empId: string, amount: string, desc: string}>({ empId: '', amount: '', desc: '' });
+    const [newExpense, setNewExpense] = useState<{amount: string, category: string, desc: string, date: string}>({ amount: '', category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
 
     // Permissions
-    const canManageFinance = ['general_manager', 'owner', 'accountant', 'manager', 'office_manager'].includes(currentUserRole);
+    const canManageFinance = ['general_manager', 'owner', 'accountant', 'manager', 'office_manager'].includes(currentUserRole as string);
 
-    // Filter Data based on Role
+    // Filter Data
     const visibleCustodies = useMemo(() => {
         let filtered = custodies;
-        // If not admin, see only own data
         if (!canManageFinance) {
             filtered = custodies.filter(c => c.employeeId === currentUserId);
         }
@@ -60,46 +61,44 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 
     // Handlers
     const handleAddCustody = async () => {
-        if (!newCustody.empId || newCustody.amount <= 0) return;
+        if (!newCustody.empId || !newCustody.amount) return;
+        setIsLoading(true);
         const custody: CustodyRecord = {
             id: Date.now().toString(),
             employeeId: newCustody.empId,
-            amount: newCustody.amount,
+            amount: parseFloat(newCustody.amount),
             description: newCustody.desc,
             type: 'cash',
             receivedDate: new Date().toISOString(),
             status: 'active'
         };
         await upsertCustody(custody);
-        setNewCustody({ empId: '', amount: 0, desc: '' });
+        setNewCustody({ empId: '', amount: '', desc: '' });
         onUpdateData();
-        alert('تم إضافة العهدة بنجاح');
+        setIsLoading(false);
     };
 
     const handleAddExpense = async () => {
-        if (newExpense.amount <= 0 || !newExpense.desc) return;
+        if (!newExpense.amount || !newExpense.desc) return;
+        setIsLoading(true);
         const expense: ExpenseRecord = {
             id: Date.now().toString(),
-            employeeId: currentUserId, // Employee submits for themselves
-            amount: newExpense.amount,
+            employeeId: currentUserId,
+            amount: parseFloat(newExpense.amount),
             category: newExpense.category,
             description: newExpense.desc,
             date: newExpense.date,
             status: 'pending'
         };
         await upsertExpense(expense);
-        setNewExpense({ amount: 0, category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
+        setNewExpense({ amount: '', category: 'عام', desc: '', date: new Date().toISOString().split('T')[0] });
         onUpdateData();
-        alert('تم تقديم طلب المصروف بنجاح');
+        setIsLoading(false);
     };
 
     const handleExpenseAction = async (expense: ExpenseRecord, status: 'approved' | 'rejected') => {
         if (!confirm(status === 'approved' ? 'اعتماد المصروف؟' : 'رفض المصروف؟')) return;
         await upsertExpense({ ...expense, status });
-        
-        // If approved, verify if we need to deduct from custody automatically? 
-        // For now, keep it simple.
-        
         onUpdateData();
     };
 
@@ -109,282 +108,325 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
         onUpdateData();
     };
 
+    const handleDeleteExpense = async (id: string) => {
+        if (!confirm('حذف المصروف نهائياً؟')) return;
+        await deleteExpense(id);
+        onUpdateData();
+    };
+
     return (
         <div className="space-y-8 pb-20 animate-fade-in">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Header Section (Matching Dashboard Style) */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-4">
-                    <button onClick={onExit} className="p-3 bg-white dark:bg-slate-800 rounded-2xl hover:bg-slate-50 shadow-sm text-slate-500">
-                        <ArrowLeft size={24} />
+                    <button 
+                        onClick={onExit}
+                        className="p-3 bg-slate-50 dark:bg-slate-700 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-600 transition-all text-slate-500 dark:text-slate-300"
+                    >
+                        <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-                            <Wallet className="text-purple-500" /> إدارة العهد والمصروفات
-                        </h1>
-                        <p className="text-slate-500 text-sm">متابعة العهد الشخصية وتسوية المصروفات</p>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <Wallet className="text-purple-600" /> الإدارة المالية
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                            {activeTab === 'custodies' ? 'متابعة العهد المسلمة للموظفين' : 'مراجعة واعتماد المصروفات'}
+                        </p>
                     </div>
                 </div>
-                
-                {/* Stats Cards */}
-                <div className="flex gap-4">
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-3">
-                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><Briefcase size={20}/></div>
+
+                <div className="flex flex-col md:flex-row gap-4">
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 px-5 py-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800/30">
+                        <Briefcase size={20} className="text-purple-600 dark:text-purple-400" />
                         <div>
-                            <p className="text-xs text-slate-500">إجمالي العهد الحالية</p>
-                            <p className="text-lg font-black text-slate-800 dark:text-white">{totalCustodyAmount.toLocaleString()} ج.م</p>
+                            <p className="text-[10px] text-purple-600/70 dark:text-purple-300 font-bold uppercase">إجمالي العهد</p>
+                            <p className="text-lg font-black text-purple-700 dark:text-purple-200">{totalCustodyAmount.toLocaleString()} ج.م</p>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-3">
-                        <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20}/></div>
+                    <div className="flex items-center gap-3 px-5 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/30">
+                        <Clock size={20} className="text-amber-600 dark:text-amber-400" />
                         <div>
-                            <p className="text-xs text-slate-500">مصروفات تحت المراجعة</p>
-                            <p className="text-lg font-black text-slate-800 dark:text-white">{totalPendingExpenses.toLocaleString()} ج.م</p>
+                            <p className="text-[10px] text-amber-600/70 dark:text-amber-300 font-bold uppercase">مصروفات معلقة</p>
+                            <p className="text-lg font-black text-amber-700 dark:text-amber-200">{totalPendingExpenses.toLocaleString()} ج.م</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 pb-1">
+            {/* Navigation Tabs (Matching Settings Tabs Style) */}
+            <div className="flex gap-4 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-2xl max-w-md mx-auto xl:mx-0">
                 <button 
                     onClick={() => setActiveTab('custodies')}
-                    className={`pb-3 px-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'custodies' ? 'border-purple-500 text-purple-600' : 'border-transparent text-slate-500'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${activeTab === 'custodies' ? 'bg-white dark:bg-slate-700 shadow-md text-purple-600 dark:text-purple-400' : 'text-slate-500'}`}
                 >
-                    سجل العهد
+                    <Briefcase size={18} /> سجل العهد
                 </button>
                 <button 
                     onClick={() => setActiveTab('expenses')}
-                    className={`pb-3 px-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'expenses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${activeTab === 'expenses' ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}
                 >
-                    المصروفات والتسويات
+                    <FileText size={18} /> المصروفات
                 </button>
             </div>
 
-            {/* --- CUSTODIES TAB --- */}
-            {activeTab === 'custodies' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Add Form (Only for Admins) */}
-                    {canManageFinance && (
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 h-fit">
-                            <h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-slate-800 dark:text-white">
-                                <Plus className="text-purple-500" size={20}/> صرف عهدة جديدة
-                            </h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">الموظف المستلم</label>
-                                    <select 
-                                        value={newCustody.empId} 
-                                        onChange={e => setNewCustody({...newCustody, empId: e.target.value})}
-                                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm"
+            {/* Content Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                {/* --- INPUT FORM CARD (Left Column) --- */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 sticky top-4">
+                        <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                            <Plus className="text-emerald-500" size={24} /> 
+                            {activeTab === 'custodies' ? 'صرف عهدة جديدة' : 'تسجيل مصروف جديد'}
+                        </h3>
+                        
+                        {activeTab === 'custodies' ? (
+                            /* CUSTODY FORM */
+                            canManageFinance ? (
+                                <div className="space-y-5">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الموظف المستلم</label>
+                                        <select 
+                                            value={newCustody.empId} 
+                                            onChange={e => setNewCustody({...newCustody, empId: e.target.value})}
+                                            className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm dark:text-white"
+                                        >
+                                            <option value="">-- اختر الموظف --</option>
+                                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">قيمة العهدة (ج.م)</label>
+                                        <input 
+                                            type="number" 
+                                            value={newCustody.amount}
+                                            onChange={e => setNewCustody({...newCustody, amount: e.target.value})}
+                                            className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-center font-black text-lg dark:text-white"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وصف العهدة</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="مثال: عهدة وقود، شراء خامات..."
+                                            value={newCustody.desc}
+                                            onChange={e => setNewCustody({...newCustody, desc: e.target.value})}
+                                            className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm dark:text-white"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handleAddCustody}
+                                        disabled={isLoading}
+                                        className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <option value="">-- اختر الموظف --</option>
-                                        {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                        {isLoading ? 'جاري الحفظ...' : 'تسجيل العهدة'} <CheckCircle size={18} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 text-slate-400">
+                                    <p>ليس لديك صلاحية صرف عهد.</p>
+                                </div>
+                            )
+                        ) : (
+                            /* EXPENSE FORM */
+                            <div className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">قيمة المصروف (ج.م)</label>
+                                    <input 
+                                        type="number" 
+                                        value={newExpense.amount}
+                                        onChange={e => setNewExpense({...newExpense, amount: e.target.value})}
+                                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-center font-black text-lg dark:text-white"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تاريخ المصروف</label>
+                                    <input 
+                                        type="date" 
+                                        value={newExpense.date}
+                                        onChange={e => setNewExpense({...newExpense, date: e.target.value})}
+                                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">بند الصرف</label>
+                                    <select 
+                                        value={newExpense.category}
+                                        onChange={e => setNewExpense({...newExpense, category: e.target.value})}
+                                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm dark:text-white"
+                                    >
+                                        <option value="عام">مصروفات عامة</option>
+                                        <option value="وقود">وقود وانتقالات</option>
+                                        <option value="ضيافة">ضيافة وبوفيه</option>
+                                        <option value="خامات">شراء خامات</option>
+                                        <option value="صيانة">صيانة وإصلاحات</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">قيمة العهدة</label>
-                                    <input 
-                                        type="number" 
-                                        value={newCustody.amount}
-                                        onChange={e => setNewCustody({...newCustody, amount: parseFloat(e.target.value)})}
-                                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-center font-bold"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">وصف العهدة</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="مثال: عهدة وقود، عهدة شراء خامات..."
-                                        value={newCustody.desc}
-                                        onChange={e => setNewCustody({...newCustody, desc: e.target.value})}
-                                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm"
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">التفاصيل</label>
+                                    <textarea 
+                                        rows={3}
+                                        placeholder="اكتب تفاصيل المصروف..."
+                                        value={newExpense.desc}
+                                        onChange={e => setNewExpense({...newExpense, desc: e.target.value})}
+                                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm resize-none dark:text-white"
                                     />
                                 </div>
                                 <button 
-                                    onClick={handleAddCustody}
-                                    className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all"
+                                    onClick={handleAddExpense}
+                                    disabled={isLoading}
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
                                 >
-                                    تسجيل العهدة
+                                    {isLoading ? 'جاري الإرسال...' : 'إرسال للمراجعة'} <TrendingUp size={18} />
                                 </button>
                             </div>
-                        </div>
-                    )}
-
-                    {/* List */}
-                    <div className={`${canManageFinance ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-4`}>
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-white">سجل العهد {canManageFinance ? 'للموظفين' : 'الخاص بي'}</h3>
-                            <div className="relative w-64">
-                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                                <input 
-                                    type="text" placeholder="بحث..."
-                                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                    className="w-full pr-10 pl-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {visibleCustodies.map(custody => {
-                                const emp = employees.find(e => e.id === custody.employeeId);
-                                return (
-                                    <div key={custody.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500">
-                                                    {emp?.name.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-white">{emp?.name}</h4>
-                                                    <p className="text-xs text-slate-500">{new Date(custody.receivedDate).toLocaleDateString('ar-EG')}</p>
-                                                </div>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${custody.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                {custody.status === 'active' ? 'في العهدة' : 'تمت التسوية'}
-                                            </span>
-                                        </div>
-                                        <div className="mb-4">
-                                            <p className="text-2xl font-black text-slate-800 dark:text-white">{custody.amount.toLocaleString()} <span className="text-sm font-medium text-slate-400">ج.م</span></p>
-                                            <p className="text-sm text-slate-500 mt-1">{custody.description}</p>
-                                        </div>
-                                        {canManageFinance && (
-                                            <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-700">
-                                                <button onClick={() => handleDeleteCustody(custody.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
-                                                    <Trash2 size={18}/>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                            {visibleCustodies.length === 0 && <div className="col-span-full text-center py-10 text-slate-400">لا توجد عهد مسجلة</div>}
-                        </div>
+                        )}
                     </div>
                 </div>
-            )}
 
-            {/* --- EXPENSES TAB --- */}
-            {activeTab === 'expenses' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Add Expense (Available to everyone) */}
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 h-fit">
-                        <h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-slate-800 dark:text-white">
-                            <FileText className="text-blue-500" size={20}/> تسجيل مصروف جديد
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">المبلغ المصروف</label>
-                                <input 
-                                    type="number" 
-                                    value={newExpense.amount}
-                                    onChange={e => setNewExpense({...newExpense, amount: parseFloat(e.target.value)})}
-                                    className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-center font-bold"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">التاريخ</label>
-                                <input 
-                                    type="date" 
-                                    value={newExpense.date}
-                                    onChange={e => setNewExpense({...newExpense, date: e.target.value})}
-                                    className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">بند الصرف</label>
-                                <select 
-                                    value={newExpense.category}
-                                    onChange={e => setNewExpense({...newExpense, category: e.target.value})}
-                                    className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm"
-                                >
-                                    <option value="عام">مصروفات عامة</option>
-                                    <option value="وقود">وقود وانتقالات</option>
-                                    <option value="ضيافة">ضيافة وبوفيه</option>
-                                    <option value="خامات">شراء خامات</option>
-                                    <option value="صيانة">صيانة</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">التفاصيل</label>
-                                <textarea 
-                                    rows={3}
-                                    placeholder="اكتب تفاصيل المصروف..."
-                                    value={newExpense.desc}
-                                    onChange={e => setNewExpense({...newExpense, desc: e.target.value})}
-                                    className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 outline-none text-sm resize-none"
-                                />
-                            </div>
-                            <button 
-                                onClick={handleAddExpense}
-                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all"
-                            >
-                                إرسال للمراجعة
-                            </button>
-                        </div>
+                {/* --- DATA LIST (Right Column - Spans 2) --- */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Search Bar */}
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                        <Search className="text-slate-400" size={20}/>
+                        <input 
+                            type="text" 
+                            placeholder={activeTab === 'custodies' ? "بحث باسم الموظف أو وصف العهدة..." : "بحث في المصروفات..."}
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full bg-transparent outline-none text-slate-700 dark:text-white font-medium"
+                        />
                     </div>
 
-                    {/* List */}
-                    <div className="lg:col-span-2 space-y-4">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-white">سجل المصروفات</h3>
-                            <div className="relative w-64">
-                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                                <input 
-                                    type="text" placeholder="بحث..."
-                                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                    className="w-full pr-10 pl-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {visibleExpenses.map(expense => {
-                                const emp = employees.find(e => e.id === expense.employeeId);
-                                return (
-                                    <div key={expense.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-center gap-4">
-                                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                                            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold">
-                                                <DollarSign size={18} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-800 dark:text-white">{expense.category}</h4>
-                                                <p className="text-xs text-slate-500">{emp?.name}</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex-1 text-center sm:text-right w-full">
-                                            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{expense.description}</p>
-                                            <p className="text-[10px] text-slate-400">{expense.date}</p>
-                                        </div>
-
-                                        <div className="text-center w-full sm:w-auto">
-                                            <p className="text-lg font-black text-slate-800 dark:text-white">{expense.amount} ج.م</p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
-                                            {expense.status === 'pending' ? (
-                                                canManageFinance ? (
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => handleExpenseAction(expense, 'approved')} className="p-2 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200"><CheckCircle size={18}/></button>
-                                                        <button onClick={() => handleExpenseAction(expense, 'rejected')} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><XCircle size={18}/></button>
+                    {/* Records List */}
+                    <div className="space-y-4">
+                        {activeTab === 'custodies' ? (
+                            visibleCustodies.length > 0 ? (
+                                visibleCustodies.map(custody => {
+                                    const emp = employees.find(e => e.id === custody.employeeId);
+                                    return (
+                                        <div key={custody.id} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:border-purple-200 transition-all group relative">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center font-bold text-lg">
+                                                        {emp?.name.charAt(0)}
                                                     </div>
-                                                ) : (
-                                                    <span className="text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1 rounded-full">قيد المراجعة</span>
-                                                )
-                                            ) : (
-                                                <span className={`text-xs font-bold px-3 py-1 rounded-full ${expense.status === 'approved' ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'}`}>
-                                                    {expense.status === 'approved' ? 'معتمد' : 'مرفوض'}
-                                                </span>
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-800 dark:text-white text-lg">{emp?.name}</h4>
+                                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                            <Calendar size={12} /> {new Date(custody.receivedDate).toLocaleDateString('ar-EG')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-left">
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold ${custody.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                        {custody.status === 'active' ? 'في العهدة' : 'تمت التسوية'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl flex justify-between items-center">
+                                                <div>
+                                                    <p className="text-xs text-slate-500 mb-1">وصف العهدة</p>
+                                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{custody.description}</p>
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs text-slate-500 mb-1">القيمة</p>
+                                                    <p className="text-xl font-black text-slate-800 dark:text-white">{custody.amount.toLocaleString()} ج.م</p>
+                                                </div>
+                                            </div>
+
+                                            {canManageFinance && (
+                                                <button 
+                                                    onClick={() => handleDeleteCustody(custody.id)}
+                                                    className="absolute top-6 left-6 text-slate-300 hover:text-red-500 p-2 transition-colors opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             )}
                                         </div>
-                                    </div>
-                                );
-                            })}
-                            {visibleExpenses.length === 0 && <div className="text-center py-10 text-slate-400">لا توجد مصروفات</div>}
-                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center py-20 text-slate-400">
+                                    <Briefcase size={48} className="mx-auto mb-4 opacity-50" />
+                                    <p>لا توجد سجلات عهد حالياً</p>
+                                </div>
+                            )
+                        ) : (
+                            visibleExpenses.length > 0 ? (
+                                visibleExpenses.map(expense => {
+                                    const emp = employees.find(e => e.id === expense.employeeId);
+                                    return (
+                                        <div key={expense.id} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:border-blue-200 transition-all group relative">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold">
+                                                        <DollarSign size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-800 dark:text-white text-lg">{expense.category}</h4>
+                                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                            <span>{emp?.name}</span> • <span>{expense.date}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-black text-slate-800 dark:text-white">{expense.amount} <span className="text-xs font-medium text-slate-400">ج.م</span></p>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <p className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 py-2 px-4 rounded-xl flex-1 ml-4">
+                                                    {expense.description}
+                                                </p>
+                                                
+                                                <div className="flex items-center gap-2">
+                                                    {expense.status === 'pending' ? (
+                                                        canManageFinance ? (
+                                                            <>
+                                                                <button onClick={() => handleExpenseAction(expense, 'approved')} className="flex items-center gap-1 px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl text-xs font-bold transition-colors">
+                                                                    <CheckCircle size={14} /> اعتماد
+                                                                </button>
+                                                                <button onClick={() => handleExpenseAction(expense, 'rejected')} className="flex items-center gap-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl text-xs font-bold transition-colors">
+                                                                    <XCircle size={14} /> رفض
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1 px-3 py-2 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold border border-amber-100">
+                                                                <Clock size={14} /> قيد المراجعة
+                                                            </span>
+                                                        )
+                                                    ) : (
+                                                        <span className={`flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold ${expense.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                                            {expense.status === 'approved' ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+                                                            {expense.status === 'approved' ? 'تم الاعتماد' : 'مرفوض'}
+                                                        </span>
+                                                    )}
+                                                    
+                                                    {canManageFinance && (
+                                                        <button onClick={() => handleDeleteExpense(expense.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center py-20 text-slate-400">
+                                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                                    <p>لا توجد مصروفات مسجلة</p>
+                                </div>
+                            )
+                        )}
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
