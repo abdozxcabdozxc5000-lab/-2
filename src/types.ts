@@ -14,7 +14,6 @@ export interface Employee {
   branch?: 'office' | 'factory'; 
   joinDate: string;
   avatar: string;
-  // Payroll Fields
   basicSalary?: number;
   employmentType?: EmploymentType;
 }
@@ -26,7 +25,7 @@ export type RecordSource = 'manual' | 'device' | 'app';
 export interface AttendanceRecord {
   id: string;
   employeeId: string;
-  date: string; // YYYY-MM-DD
+  date: string; 
   checkIn?: string; 
   checkOut?: string; 
   checkOutDate?: string; 
@@ -48,7 +47,7 @@ export interface Loan {
     employeeId: string;
     totalAmount: number;
     paidAmount: number;
-    installmentPerMonth: number; // المبلغ المتفق خصمه شهرياً
+    installmentPerMonth: number;
     startDate: string;
     status: 'active' | 'completed';
 }
@@ -59,47 +58,44 @@ export interface PayrollRecord {
     month: number;
     year: number;
     basicSalary: number;
-    
-    // Additions
     overtimeHours: number;
     overtimeValue: number;
-    incentives: number; // حوافز (مكتب)
-    commissions: number; // عمولات (سيلز)
-    bonuses: number; // مكافآت أخرى
-
-    // Deductions
+    incentives: number;
+    commissions: number;
+    bonuses: number;
     absentDays: number;
     absentValue: number;
-    penaltyValue: number; // خصومات جزائية (تلقائية)
-    deductions: number;   // خصومات إضافية (يدوية)
-    loanDeduction: number; // خصم السلفة
-    insurance: number; // تأمينات
-
+    penaltyValue: number;
+    deductions: number;
+    loanDeduction: number;
+    insurance: number;
     netSalary: number;
     status: 'draft' | 'paid';
     generatedAt: string;
 }
 
-// --- NEW FINANCE TYPES ---
+// --- UPDATED FINANCE TYPES TO MATCH YOUR FILES ---
 export interface CustodyRecord {
     id: string;
     employeeId: string;
+    userName: string;
     amount: number;
-    description: string;
-    type: 'cash' | 'equipment';
+    description: string; // added to match standard
+    type: string; // 'cash' | 'equipment' etc
     receivedDate: string;
-    status: 'active' | 'cleared';
+    status: 'pending' | 'confirmed';
 }
 
 export interface ExpenseRecord {
     id: string;
     employeeId: string;
+    userName: string;
     amount: number;
     category: string;
     description: string;
     date: string;
     status: 'pending' | 'approved' | 'rejected';
-    receiptImage?: string;
+    receiptImageUrl?: string;
 }
 // -------------------------
 
@@ -151,10 +147,8 @@ export interface BranchSettings {
     lng: number;
     radius: number;
     weekendDays: number[];
-    // Payroll Config
     payrollDaysBase?: number; 
     payrollHoursBase?: number; 
-    // Attendance Rules
     gracePeriodMinutes?: number;
     penaltyValue?: number;
 }
