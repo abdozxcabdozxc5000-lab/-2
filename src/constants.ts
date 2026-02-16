@@ -47,9 +47,6 @@ export const DEFAULT_CONFIG: AppConfig = {
         payrollHoursBase: 9,
         gracePeriodMinutes: 15, // Factory Specific Default
         penaltyValue: 1         // Factory Specific Default
-    },
-    permissions: {
-        financeManage: ['owner', 'general_manager', 'accountant'] // Default roles
     }
 };
 
