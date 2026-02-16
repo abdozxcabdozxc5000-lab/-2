@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Employee, CustodyRecord, ExpenseRecord, UserRole } from '../types';
+import { Employee, CustodyRecord, ExpenseRecord, UserRole, AppConfig } from '../types';
 import { upsertCustody, deleteCustody, upsertExpense, deleteExpense } from '../supabaseClient';
 import { 
     DollarSign, FileText, TrendingUp, Clock, Briefcase, 
@@ -15,6 +15,7 @@ interface FinanceManagerProps {
     expenses: ExpenseRecord[];
     currentUserRole: UserRole;
     currentUserId: string;
+    config: AppConfig; // Added config prop
     onUpdateData: () => void;
     onExit: () => void;
 }
@@ -86,7 +87,7 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
 // --- MAIN COMPONENT ---
 
 const FinanceManager: React.FC<FinanceManagerProps> = ({ 
-    employees, custodies, expenses, currentUserRole, currentUserId, onUpdateData, onExit 
+    employees, custodies, expenses, currentUserRole, currentUserId, config, onUpdateData, onExit 
 }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'custodies' | 'expenses' | 'settings'>('dashboard');
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -128,8 +129,11 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     useEffect(() => { localStorage.setItem('mowazeb_payment_methods', JSON.stringify(paymentMethods)); }, [paymentMethods]);
     useEffect(() => { localStorage.setItem('mowazeb_funding_sources', JSON.stringify(fundingSources)); }, [fundingSources]);
 
-    // Permissions
-    const canManageFinance = ['general_manager', 'owner', 'accountant', 'manager', 'office_manager'].includes(currentUserRole);
+    // --- DYNAMIC PERMISSIONS LOGIC ---
+    const canManageFinance = useMemo(() => {
+        const allowedRoles = config.permissions?.financeManage || ['owner', 'general_manager', 'accountant'];
+        return allowedRoles.includes(currentUserRole);
+    }, [currentUserRole, config]);
 
     // Filter Logic
     const visibleCustodies = useMemo(() => {
@@ -476,6 +480,7 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                             <p className="text-3xl font-black text-slate-800 dark:text-white">{custody.amount.toLocaleString()} <span className="text-sm text-slate-400 font-medium">ج.م</span></p>
                                             <div className="flex flex-wrap gap-2 mt-2">
                                                 <span className="text-[10px] px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-bold">{custody.type}</span>
+                                                {custody.paymentMethod && <span className="text-[10px] px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg font-bold">{custody.paymentMethod}</span>}
                                                 {custody.source && <span className="text-[10px] px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg font-bold">{custody.source}</span>}
                                                 <p className="text-sm text-slate-500 bg-slate-50 dark:bg-slate-700/50 px-2 py-1 rounded-lg flex-1 truncate">{custody.description}</p>
                                             </div>

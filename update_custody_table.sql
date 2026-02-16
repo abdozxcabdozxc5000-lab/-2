@@ -14,8 +14,19 @@ ALTER TABLE public.custodies ADD COLUMN IF NOT EXISTS "paymentMethod" text;
 ALTER TABLE public.custodies ADD COLUMN IF NOT EXISTS source text;
 
 -- 4. Update existing records to have default values (Optional but recommended)
-UPDATE public.custodies SET category = type WHERE category IS NULL; -- 'type' was used before as classification
+-- Only set default if the value is NULL to avoid overwriting existing data
+UPDATE public.custodies SET category = type WHERE category IS NULL; 
 UPDATE public.custodies SET "paymentMethod" = 'نقدية' WHERE "paymentMethod" IS NULL;
 UPDATE public.custodies SET source = 'الخزينة' WHERE source IS NULL;
+
+-- 5. Ensure RLS is enabled and policies allow access
+ALTER TABLE public.custodies ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Enable all access for custodies" ON public.custodies;
+
+CREATE POLICY "Enable all access for custodies" ON public.custodies 
+FOR ALL 
+USING (true) 
+WITH CHECK (true);
 
 -- Done. The table is now ready for the new fields.

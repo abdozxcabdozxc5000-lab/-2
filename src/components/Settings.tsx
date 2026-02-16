@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserRole, Holiday, BranchSettings } from '../types';
-import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign, AlertTriangle } from 'lucide-react';
+import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign, AlertTriangle, Lock } from 'lucide-react';
 import { Permissions } from '../utils';
 import { DEFAULT_CONFIG } from '../constants';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap } from 'react-leaflet';
@@ -41,6 +41,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
       ...config,
       office: { ...DEFAULT_CONFIG.office, ...(config.office || {}) },
       factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) },
+      permissions: { ...DEFAULT_CONFIG.permissions, ...(config.permissions || {}) } // Ensure permissions exist
   });
   
   const [showSaved, setShowSaved] = useState(false);
@@ -61,6 +62,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
         ...config,
         office: { ...DEFAULT_CONFIG.office, ...(config.office || {}) },
         factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) },
+        permissions: { ...DEFAULT_CONFIG.permissions, ...(config.permissions || {}) }
     });
   }, [config]);
 
@@ -89,6 +91,23 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
           newDays = [...currentDays, dayIndex];
       }
       updateBranchSettings(branch, { weekendDays: newDays });
+  };
+
+  const toggleFinancePermission = (role: UserRole) => {
+      const currentRoles = localConfig.permissions?.financeManage || [];
+      let newRoles;
+      if (currentRoles.includes(role)) {
+          newRoles = currentRoles.filter(r => r !== role);
+      } else {
+          newRoles = [...currentRoles, role];
+      }
+      setLocalConfig(prev => ({
+          ...prev,
+          permissions: {
+              ...prev.permissions!,
+              financeManage: newRoles
+          }
+      }));
   };
 
   const handleAddHoliday = () => {
@@ -184,7 +203,16 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
       { id: 5, label: 'الجمعة' }
   ];
 
-  const currentLat = localConfig[activeTab].lat || 30.0444; // Default to Cairo if 0
+  const rolesList: {id: UserRole, label: string}[] = [
+      { id: 'owner', label: 'صاحب الشركة (Owner)' },
+      { id: 'general_manager', label: 'المدير العام' },
+      { id: 'manager', label: 'المدير المباشر' },
+      { id: 'accountant', label: 'المحاسب' },
+      { id: 'office_manager', label: 'مدير المكتب' },
+      { id: 'employee', label: 'الموظف' }
+  ];
+
+  const currentLat = localConfig[activeTab].lat || 30.0444; 
   const currentLng = localConfig[activeTab].lng || 31.2357;
   const currentRadius = localConfig[activeTab].radius || 100;
 
@@ -198,6 +226,69 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                   <span className="text-sm font-bold">تم حفظ التغييرات سحابياً</span>
               </div>
           )}
+      </div>
+
+      {/* --- Permissions Management Section (NEW) --- */}
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Lock className="text-amber-500" size={20} /> إدارة الصلاحيات
+          </h3>
+          
+          <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800">
+              <h4 className="text-sm font-bold text-amber-800 dark:text-amber-400 mb-3">
+                  من يملك صلاحية (إضافة/تعديل/حذف) العهد والمصروفات؟
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {rolesList.map((roleItem) => (
+                      <label key={roleItem.id} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-amber-100/50 dark:hover:bg-amber-800/30 transition-colors">
+                          <input 
+                              type="checkbox"
+                              checked={localConfig.permissions?.financeManage?.includes(roleItem.id) || false}
+                              onChange={() => toggleFinancePermission(roleItem.id)}
+                              className="w-5 h-5 rounded text-amber-600 focus:ring-amber-500"
+                          />
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{roleItem.label}</span>
+                      </label>
+                  ))}
+              </div>
+          </div>
+      </div>
+
+      {/* --- Global Settings (Grace Period & Penalty) --- */}
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <ShieldCheck className="text-indigo-500" size={20} /> إعدادات عامة (تطبق على الكل)
+          </h3>
+          <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1 p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800">
+                    <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-2">
+                        <Target size={18} />
+                        فترة السماح بالدقائق (إعداد عام)
+                    </label>
+                    <div className="flex items-center gap-4">
+                        <input 
+                            type="number" min="0" max="60"
+                            value={localConfig.gracePeriodMinutes || 0}
+                            onChange={e => setLocalConfig({...localConfig, gracePeriodMinutes: parseInt(e.target.value) || 0})}
+                            className="w-full p-3 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
+                        />
+                    </div>
+              </div>
+              <div className="flex-1 p-4 rounded-2xl bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800">
+                    <label className="block text-sm font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
+                        <X size={18} />
+                        جزاء الغياب (نقاط - إعداد عام)
+                    </label>
+                    <div className="flex items-center gap-4">
+                        <input 
+                            type="number" min="0" max="50"
+                            value={localConfig.penaltyValue || 0}
+                            onChange={e => setLocalConfig({...localConfig, penaltyValue: parseInt(e.target.value) || 0})}
+                            className="w-full p-3 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
+                        />
+                    </div>
+              </div>
+          </div>
       </div>
 
       {/* --- Branch Settings Tabs --- */}

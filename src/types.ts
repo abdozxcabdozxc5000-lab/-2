@@ -81,10 +81,10 @@ export interface CustodyRecord {
     userName: string;
     amount: number;
     description: string;
-    type: string; // This will now act as "Classification" (e.g. Factory Custody)
-    category?: string; // Optional: Kept for compatibility or specific grouping
-    paymentMethod?: string; // Cash, Transfer, etc.
-    source?: string; // Belal, Maged, Bank, etc.
+    type: string; 
+    category?: string; 
+    paymentMethod?: string; 
+    source?: string; 
     receivedDate: string;
     status: 'pending' | 'confirmed';
 }
@@ -156,6 +156,11 @@ export interface BranchSettings {
     penaltyValue?: number;
 }
 
+// New Interface for Permissions
+export interface AppPermissions {
+    financeManage: UserRole[]; // Roles allowed to add/edit/delete finance items
+}
+
 export interface AppConfig {
   weightCommitment: number;
   weightOvertime: number;
@@ -163,6 +168,7 @@ export interface AppConfig {
   holidays: Holiday[];
   office: BranchSettings;
   factory: BranchSettings;
+  permissions?: AppPermissions; // Added permissions field
 }
 
 export interface SupabaseConfig {
