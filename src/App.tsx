@@ -12,8 +12,9 @@ import ActivityLogs from './components/ActivityLogs';
 import PageTransition from './components/PageTransition';
 import SystemPortal from './components/SystemPortal';
 import PayrollManager from './components/PayrollManager';
+import FinanceManager from './components/FinanceManager'; // NEW COMPONENT
 import { INITIAL_EMPLOYEES, generateMockAttendance, DEFAULT_CONFIG } from './constants';
-import { Employee, AttendanceRecord, AppConfig, UserRole, ActivityLog, ActionType, Loan, PayrollRecord } from './types';
+import { Employee, AttendanceRecord, AppConfig, UserRole, ActivityLog, ActionType, Loan, PayrollRecord, CustodyRecord, ExpenseRecord } from './types';
 import { 
     initSupabase, 
     subscribeToRealtime, 
@@ -31,10 +32,10 @@ import { calculateDistance } from './utils';
 import { AnimatePresence } from 'framer-motion';
 import { Cloud, Loader2, Fingerprint } from 'lucide-react';
 
-const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
+const NOTIFICATION_SOUND_URL = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA//uQZAAP8AAAgAAAAAAAgAAAAAAAEAAAgAAAAAAAgAAAAAAAD/84AAgAAAAAAACAAAAAAAAAAA";
 
 function App() {
-  const [currentSystem, setCurrentSystem] = useState<'portal' | 'attendance' | 'payroll'>('portal'); 
+  const [currentSystem, setCurrentSystem] = useState<'portal' | 'attendance' | 'payroll' | 'finance'>('portal'); 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('mowazeb_theme') === 'dark');
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'info' | 'success' | 'error'}>>([]);
@@ -46,6 +47,8 @@ function App() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
+  const [custodies, setCustodies] = useState<CustodyRecord[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   
   // App State
   const [isLoading, setIsLoading] = useState(true);
@@ -168,13 +171,12 @@ function App() {
               setLogs(data.logs || []);
               setLoans(data.loans || []);
               setPayrolls(data.payrolls || []);
+              setCustodies(data.custodies || []);
+              setExpenses(data.expenses || []);
               setConfig(processLoadedConfig(data.config));
 
-              // Only attempt session restore on full load, not silent updates
               if (!silent) {
                   const savedSessionId = localStorage.getItem('mowazeb_session_id');
-                  // We check !currentUser inside the callback because of stale closure, 
-                  // but guarding with !silent ensures we don't override active state during an update.
                   if (savedSessionId) {
                       const foundUser = fetchedEmployees.find(e => e.id === savedSessionId);
                       if (foundUser) {
@@ -338,7 +340,7 @@ function App() {
       return (
           <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#060B18] text-white relative overflow-hidden font-sans" dir="rtl">
               <div className="relative z-10 flex flex-col items-center gap-8 animate-fade-in">
-                  <Loader2 size={48} className="animate-spin text-blue-500" />
+                  <Loader2 size={48} className="animate-spin text-blue-600" />
                   <span className="text-sm font-bold text-slate-300">جاري تحميل النظام...</span>
               </div>
           </div>
@@ -377,6 +379,22 @@ function App() {
                   loans={loans}
                   payrolls={payrolls}
                   config={config}
+                  onUpdateData={() => loadDataFromCloud(true)}
+                  onExit={() => setCurrentSystem('portal')}
+              />
+          </div>
+      );
+  }
+
+  if (currentSystem === 'finance') {
+      return (
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white p-6 font-sans dir-rtl">
+              <FinanceManager 
+                  employees={employees}
+                  custodies={custodies}
+                  expenses={expenses}
+                  currentUserRole={currentUser.role}
+                  currentUserId={currentUser.id}
                   onUpdateData={() => loadDataFromCloud(true)}
                   onExit={() => setCurrentSystem('portal')}
               />

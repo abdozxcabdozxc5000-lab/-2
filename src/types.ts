@@ -80,6 +80,29 @@ export interface PayrollRecord {
     generatedAt: string;
 }
 
+// --- NEW FINANCE TYPES ---
+export interface CustodyRecord {
+    id: string;
+    employeeId: string;
+    amount: number;
+    description: string;
+    type: 'cash' | 'equipment';
+    receivedDate: string;
+    status: 'active' | 'cleared';
+}
+
+export interface ExpenseRecord {
+    id: string;
+    employeeId: string;
+    amount: number;
+    category: string;
+    description: string;
+    date: string;
+    status: 'pending' | 'approved' | 'rejected';
+    receiptImage?: string;
+}
+// -------------------------
+
 export interface DailyStats {
   record: AttendanceRecord | null;
   date: string;
@@ -129,9 +152,9 @@ export interface BranchSettings {
     radius: number;
     weekendDays: number[];
     // Payroll Config
-    payrollDaysBase?: number; // e.g. 30, 26
-    payrollHoursBase?: number; // e.g. 8, 9 
-    // Attendance Rules (Now specific to branch)
+    payrollDaysBase?: number; 
+    payrollHoursBase?: number; 
+    // Attendance Rules
     gracePeriodMinutes?: number;
     penaltyValue?: number;
 }
@@ -151,7 +174,7 @@ export interface SupabaseConfig {
     isConnected: boolean;
 }
 
-export type ActionType = 'LOGIN' | 'LOGOUT' | 'CREATE' | 'UPDATE' | 'DELETE' | 'SETTINGS' | 'ATTENDANCE' | 'PAYROLL';
+export type ActionType = 'LOGIN' | 'LOGOUT' | 'CREATE' | 'UPDATE' | 'DELETE' | 'SETTINGS' | 'ATTENDANCE' | 'PAYROLL' | 'FINANCE';
 
 export interface ActivityLog {
     id: string;

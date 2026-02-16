@@ -1,6 +1,6 @@
 
 import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import { SupabaseConfig, Employee, AttendanceRecord, AppConfig, ActivityLog, Loan, PayrollRecord } from './types';
+import { SupabaseConfig, Employee, AttendanceRecord, AppConfig, ActivityLog, Loan, PayrollRecord, CustodyRecord, ExpenseRecord } from './types';
 
 const STORAGE_KEY_SUPABASE = 'mowazeb_supabase_config';
 
@@ -73,6 +73,8 @@ export const subscribeToRealtime = (onUpdate: () => void) => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_config' }, () => onUpdate())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'loans' }, () => onUpdate())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payrolls' }, () => onUpdate())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'custodies' }, () => onUpdate())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => onUpdate())
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
                 console.log('Successfully subscribed to Realtime changes');
@@ -85,18 +87,19 @@ export const downloadAllData = async () => {
     if (!supabase) return { success: false, message: 'Not connected', code: null };
 
     try {
-        const [empRes, recRes, confRes, logRes, loanRes, payrollRes] = await Promise.all([
+        const [empRes, recRes, confRes, logRes, loanRes, payrollRes, custodyRes, expenseRes] = await Promise.all([
             supabase.from('employees').select('*'),
             supabase.from('attendance_records').select('*'),
             supabase.from('app_config').select('config').eq('id', 1).maybeSingle(),
             supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(500),
             supabase.from('loans').select('*').eq('status', 'active'),
-            supabase.from('payrolls').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200)
+            supabase.from('payrolls').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
+            supabase.from('custodies').select('*').eq('status', 'active'),
+            supabase.from('expenses').select('*').order('date', { ascending: false }).limit(300)
         ]);
 
         if (empRes.error) return { success: false, message: empRes.error.message };
         
-        // 1. MAPPING EMPLOYEES: Map database columns (snake_case) to App Types (camelCase)
         const employees = (empRes.data || []).map((e: any) => ({
             ...e,
             basicSalary: e.basic_salary ?? e.basicSalary ?? 0,        
@@ -104,7 +107,6 @@ export const downloadAllData = async () => {
             branch: e.branch || 'office'       
         })) as Employee[];
 
-        // 2. MAPPING RECORDS: Convert DB columns (checkout_date) to App Types (checkOutDate)
         const records = (recRes.data || []).map((r: any) => ({
             ...r,
             checkOutDate: r.checkout_date || r.checkOutDate || r.date
@@ -118,6 +120,8 @@ export const downloadAllData = async () => {
             logs: logRes.data as ActivityLog[] | [],
             loans: loanRes.data as Loan[] | [],
             payrolls: payrollRes.data as PayrollRecord[] | [],
+            custodies: custodyRes.data as CustodyRecord[] | [],
+            expenses: expenseRes.data as ExpenseRecord[] | [],
             code: null
         };
     } catch (err: any) {
@@ -198,10 +202,12 @@ export const upsertConfig = async (config: AppConfig) => {
 export const upsertSingleLog = async (log: ActivityLog) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false };
+    
     const { error } = await supabase.from('activity_logs').upsert({
         ...log,
         created_at: new Date().toISOString()
     }, { onConflict: 'id' });
+
     return { success: !error, error };
 };
 
@@ -234,7 +240,6 @@ export const upsertPayroll = async (payroll: PayrollRecord) => {
     return { success: !error, error };
 };
 
-// NEW FUNCTION: Delete Payroll Archive by Month/Year
 export const deletePayrollArchive = async (month: number, year: number) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false };
@@ -242,11 +247,45 @@ export const deletePayrollArchive = async (month: number, year: number) => {
     return { success: !error, error };
 };
 
+// --- CUSTODY & EXPENSES (FINANCE) ---
+
+export const upsertCustody = async (custody: CustodyRecord) => {
+    if (!supabase) initSupabase();
+    if (!supabase) return { success: false };
+    const { error } = await supabase.from('custodies').upsert({
+        ...custody,
+        created_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+    return { success: !error, error };
+};
+
+export const deleteCustody = async (id: string) => {
+    if (!supabase) initSupabase();
+    if (!supabase) return { success: false };
+    const { error } = await supabase.from('custodies').delete().eq('id', id);
+    return { success: !error, error };
+};
+
+export const upsertExpense = async (expense: ExpenseRecord) => {
+    if (!supabase) initSupabase();
+    if (!supabase) return { success: false };
+    const { error } = await supabase.from('expenses').upsert({
+        ...expense,
+        created_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+    return { success: !error, error };
+};
+
+export const deleteExpense = async (id: string) => {
+    if (!supabase) initSupabase();
+    if (!supabase) return { success: false };
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    return { success: !error, error };
+};
+
 export const uploadAllData = async (employees: Employee[], records: AttendanceRecord[], config: AppConfig) => {
     if (!supabase) initSupabase();
     if (!supabase) return { success: false, message: 'Not connected' };
-    
-    // Bulk upload logic (simplified for brevity)
     return { success: true };
 };
 
