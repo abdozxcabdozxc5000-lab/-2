@@ -36,12 +36,21 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
 };
 
 const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole }) => {
+  // Helper to ensure permissions object is strictly formed
+  const getMergedPermissions = (cfg: AppConfig) => {
+      const defPerms = DEFAULT_CONFIG.permissions || { financeManage: ['owner', 'general_manager', 'accountant'] };
+      
+      return {
+          financeManage: cfg.permissions?.financeManage || defPerms.financeManage || []
+      };
+  };
+
   const [localConfig, setLocalConfig] = useState<AppConfig>({
       ...DEFAULT_CONFIG,
       ...config,
       office: { ...DEFAULT_CONFIG.office, ...(config.office || {}) },
       factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) },
-      permissions: { ...DEFAULT_CONFIG.permissions, ...(config.permissions || {}) } // Ensure permissions exist
+      permissions: getMergedPermissions(config)
   });
   
   const [showSaved, setShowSaved] = useState(false);
@@ -62,7 +71,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
         ...config,
         office: { ...DEFAULT_CONFIG.office, ...(config.office || {}) },
         factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) },
-        permissions: { ...DEFAULT_CONFIG.permissions, ...(config.permissions || {}) }
+        permissions: getMergedPermissions(config)
     });
   }, [config]);
 
@@ -228,7 +237,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
           )}
       </div>
 
-      {/* --- Permissions Management Section (NEW) --- */}
+      {/* --- Permissions Management Section --- */}
       <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
               <Lock className="text-amber-500" size={20} /> إدارة الصلاحيات
@@ -250,43 +259,6 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{roleItem.label}</span>
                       </label>
                   ))}
-              </div>
-          </div>
-      </div>
-
-      {/* --- Global Settings (Grace Period & Penalty) --- */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-              <ShieldCheck className="text-indigo-500" size={20} /> إعدادات عامة (تطبق على الكل)
-          </h3>
-          <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1 p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800">
-                    <label className="block text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-2">
-                        <Target size={18} />
-                        فترة السماح بالدقائق (إعداد عام)
-                    </label>
-                    <div className="flex items-center gap-4">
-                        <input 
-                            type="number" min="0" max="60"
-                            value={localConfig.gracePeriodMinutes || 0}
-                            onChange={e => setLocalConfig({...localConfig, gracePeriodMinutes: parseInt(e.target.value) || 0})}
-                            className="w-full p-3 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
-                        />
-                    </div>
-              </div>
-              <div className="flex-1 p-4 rounded-2xl bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-800">
-                    <label className="block text-sm font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
-                        <X size={18} />
-                        جزاء الغياب (نقاط - إعداد عام)
-                    </label>
-                    <div className="flex items-center gap-4">
-                        <input 
-                            type="number" min="0" max="50"
-                            value={localConfig.penaltyValue || 0}
-                            onChange={e => setLocalConfig({...localConfig, penaltyValue: parseInt(e.target.value) || 0})}
-                            className="w-full p-3 border rounded-xl outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-center"
-                        />
-                    </div>
               </div>
           </div>
       </div>
@@ -342,7 +314,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                     </div>
                 </div>
 
-                {/* --- Grace Period & Penalty Config (Moved Here) --- */}
+                {/* --- Grace Period & Penalty Config --- */}
                 <div className="grid grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                     <div>
                         <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-1">
