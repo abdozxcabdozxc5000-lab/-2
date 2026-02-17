@@ -121,6 +121,7 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     const [isCustodySettingsOpen, setIsCustodySettingsOpen] = useState(false);
     const [modalType, setModalType] = useState<'custody' | 'expense' | null>(null);
     const [formData, setFormData] = useState<any>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Persistence Effects
     useEffect(() => { localStorage.setItem('mowazeb_expense_categories', JSON.stringify(expenseCategories)); }, [expenseCategories]);
@@ -177,25 +178,56 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     };
 
     const handleSubmit = async () => {
+        setIsSubmitting(true);
         if (modalType === 'custody') {
-            if (!formData.empId || !formData.amount) return;
+            if (!formData.empId) {
+                alert("يرجى اختيار الموظف المستلم");
+                setIsSubmitting(false);
+                return;
+            }
+            if (!formData.amount || parseFloat(formData.amount) <= 0) {
+                alert("يرجى إدخال مبلغ صحيح");
+                setIsSubmitting(false);
+                return;
+            }
+
             const emp = employees.find(e => e.id === formData.empId);
-            await upsertCustody({
+            const record: CustodyRecord = {
                 id: Date.now().toString(),
                 employeeId: formData.empId,
                 userName: emp?.name || 'Unknown',
                 amount: parseFloat(formData.amount),
-                description: formData.desc,
+                description: formData.desc || '',
                 type: formData.classification,
+                category: formData.classification, // Mapped to category
                 paymentMethod: formData.paymentMethod,
                 source: formData.source,
                 receivedDate: new Date().toISOString(),
                 status: 'confirmed'
-            });
+            };
+
+            const { error } = await upsertCustody(record);
+            if (error) {
+                alert(`خطأ في الحفظ: ${error.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+
         } else {
-            if (!formData.amount || !formData.desc) return;
+            // Expense Logic
+            if (!formData.amount || parseFloat(formData.amount) <= 0) {
+                alert("يرجى إدخال مبلغ المصروف");
+                setIsSubmitting(false);
+                return;
+            }
+            if (!formData.desc) {
+                alert("يرجى كتابة وصف للمصروف");
+                setIsSubmitting(false);
+                return;
+            }
+
             const emp = employees.find(e => e.id === currentUserId);
-            await upsertExpense({
+            const record: ExpenseRecord = {
                 id: Date.now().toString(),
                 employeeId: currentUserId,
                 userName: emp?.name || 'Unknown',
@@ -204,8 +236,17 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 description: formData.desc,
                 date: formData.date,
                 status: 'pending'
-            });
+            };
+
+            const { error } = await upsertExpense(record);
+            if (error) {
+                alert(`خطأ في حفظ المصروف: ${error.message}`);
+                setIsSubmitting(false);
+                return;
+            }
         }
+        
+        setIsSubmitting(false);
         setIsModalOpen(false);
         onUpdateData();
     };
@@ -242,7 +283,6 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
         }
     };
 
-    // Fix: Missing handlers for Expense Categories settings
     const addCategory = () => {
         if (newItemInput) {
             addItemToList(expenseCategories, setExpenseCategories, newItemInput);
@@ -368,7 +408,6 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 <div className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-hide">
                     
                     {activeTab === 'dashboard' && (
-                        // ... existing dashboard code ...
                         <div className="space-y-8 animate-fade-in">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <StatCard title="الرصيد الحالي" value={`${stats.balance.toLocaleString()} ج`} icon={<DollarSign/>} color="blue" darkMode={darkMode} />
@@ -753,8 +792,8 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                 />
                             </div>
 
-                            <button onClick={handleSubmit} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all hover:-translate-y-1">
-                                حفظ البيانات
+                            <button onClick={handleSubmit} disabled={isSubmitting} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0">
+                                {isSubmitting ? 'جاري الحفظ...' : 'حفظ البيانات'}
                             </button>
                         </div>
                     </div>
