@@ -5,7 +5,7 @@ import { upsertCustody, deleteCustody, upsertExpense, deleteExpense } from '../s
 import { 
     DollarSign, FileText, TrendingUp, Clock, Briefcase, 
     ArrowRight, Plus, Search, Trash2, CheckCircle, XCircle, 
-    Moon, Sun, LogOut, Menu, X, ChevronLeft, ChevronRight, Settings, Tag, Wallet, CreditCard, User, AlertTriangle
+    Moon, Sun, LogOut, Menu, X, ChevronLeft, ChevronRight, Settings, Tag, Wallet, CreditCard, User, AlertTriangle, Users
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
@@ -161,6 +161,37 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
             pendingExpenses: visibleExpenses.filter(e => e.status === 'pending').length,
             balance: totalCustody - totalExpenses
         };
+    }, [visibleCustodies, visibleExpenses]);
+
+    // --- EMPLOYEE SUMMARY STATS (For Dashboard Table) ---
+    const employeeStats = useMemo(() => {
+        const statsMap: Record<string, { name: string, custody: number, expense: number }> = {};
+
+        // Helper to ensure entry exists
+        const ensureEntry = (id: string, name: string) => {
+            if (!statsMap[id]) {
+                statsMap[id] = { name, custody: 0, expense: 0 };
+            }
+        };
+
+        // Sum Custodies
+        visibleCustodies.forEach(c => {
+            if (c.status === 'confirmed') {
+                ensureEntry(c.employeeId, c.userName);
+                statsMap[c.employeeId].custody += c.amount;
+            }
+        });
+
+        // Sum Expenses
+        visibleExpenses.forEach(e => {
+            if (e.status === 'approved') {
+                ensureEntry(e.employeeId, e.userName);
+                statsMap[e.employeeId].expense += e.amount;
+            }
+        });
+
+        // Convert to array and sort by balance descending (highest holder first)
+        return Object.values(statsMap).sort((a, b) => (b.custody - b.expense) - (a.custody - a.expense));
     }, [visibleCustodies, visibleExpenses]);
 
     // --- HANDLERS ---
@@ -511,6 +542,43 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* --- EMPLOYEE SUMMARY TABLE (New) --- */}
+                            <div className={`bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden mt-8`}>
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                        <Users className="text-blue-500" /> ملخص العهد والمصروفات للموظفين
+                                    </h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right">
+                                        <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-bold text-xs uppercase">
+                                            <tr>
+                                                <th className="p-5">الموظف</th>
+                                                <th className="p-5 text-center text-emerald-600">إجمالي العهد</th>
+                                                <th className="p-5 text-center text-red-500">إجمالي المصروفات</th>
+                                                <th className="p-5 text-center text-blue-600">المتبقي (الرصيد)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            {employeeStats.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={4} className="p-8 text-center text-slate-400">لا توجد بيانات متاحة</td>
+                                                </tr>
+                                            ) : (
+                                                employeeStats.map((stat, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                                                        <td className="p-5 font-bold text-slate-800 dark:text-white">{stat.name}</td>
+                                                        <td className="p-5 text-center font-mono text-emerald-600 font-bold">{stat.custody.toLocaleString()}</td>
+                                                        <td className="p-5 text-center font-mono text-red-500 font-bold">{stat.expense.toLocaleString()}</td>
+                                                        <td className="p-5 text-center font-mono text-blue-600 font-black text-lg">{(stat.custody - stat.expense).toLocaleString()}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -547,7 +615,7 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800 dark:text-white">{custody.userName}</h4>
-                                                    <p className="text-xs text-slate-500">{custody.receivedDate}</p>
+                                                    <p className="text-xs text-slate-500">{new Date(custody.receivedDate).toLocaleDateString('ar-EG')}</p>
                                                 </div>
                                             </div>
                                             <span className={`px-3 py-1 rounded-xl text-xs font-bold ${custody.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
