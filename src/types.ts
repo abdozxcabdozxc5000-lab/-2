@@ -156,6 +156,10 @@ export interface BranchSettings {
     penaltyValue?: number;
 }
 
+export interface AppPermissions {
+    financeManage: UserRole[];
+}
+
 export interface AppConfig {
   weightCommitment: number;
   weightOvertime: number;
@@ -163,6 +167,7 @@ export interface AppConfig {
   holidays: Holiday[];
   office: BranchSettings;
   factory: BranchSettings;
+  permissions?: AppPermissions;
 }
 
 export interface SupabaseConfig {

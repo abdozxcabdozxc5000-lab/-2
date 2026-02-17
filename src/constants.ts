@@ -22,6 +22,9 @@ export const DEFAULT_CONFIG: AppConfig = {
     weightOvertime: WEIGHT_OVERTIME,
     weightAbsence: WEIGHT_ABSENCE,
     holidays: [],
+    permissions: {
+        financeManage: ['owner', 'general_manager', 'accountant']
+    },
     office: {
         workStartTime: WORK_START_TIME,
         workEndTime: WORK_END_TIME,

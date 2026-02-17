@@ -94,7 +94,7 @@ export const downloadAllData = async () => {
             supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(500),
             supabase.from('loans').select('*').eq('status', 'active'),
             supabase.from('payrolls').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
-            supabase.from('custodies').select('*').eq('status', 'active'),
+            supabase.from('custodies').select('*'), // Fetch ALL custodies, not just active
             supabase.from('expenses').select('*').order('date', { ascending: false }).limit(300)
         ]);
 

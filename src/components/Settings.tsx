@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserRole, Holiday, BranchSettings } from '../types';
-import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign, AlertTriangle } from 'lucide-react';
+import { Save, CheckCircle, Calendar, Plus, X, Clock, MapPin, Target, ShieldCheck, Building, Factory, Locate, Search, ExternalLink, Navigation, Link as LinkIcon, AlertCircle, DollarSign, AlertTriangle, Lock } from 'lucide-react';
 import { Permissions } from '../utils';
 import { DEFAULT_CONFIG } from '../constants';
 import { MapContainer, TileLayer, Circle, useMapEvents, useMap } from 'react-leaflet';
@@ -36,11 +36,21 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
 };
 
 const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole }) => {
+  // Helper to ensure permissions object is strictly formed
+  const getMergedPermissions = (cfg: AppConfig) => {
+      const defPerms = DEFAULT_CONFIG.permissions || { financeManage: ['owner', 'general_manager', 'accountant'] };
+      
+      return {
+          financeManage: cfg.permissions?.financeManage || defPerms.financeManage || []
+      };
+  };
+
   const [localConfig, setLocalConfig] = useState<AppConfig>({
       ...DEFAULT_CONFIG,
       ...config,
       office: { ...DEFAULT_CONFIG.office, ...(config.office || {}) },
       factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) },
+      permissions: getMergedPermissions(config)
   });
   
   const [showSaved, setShowSaved] = useState(false);
@@ -61,6 +71,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
         ...config,
         office: { ...DEFAULT_CONFIG.office, ...(config.office || {}) },
         factory: { ...DEFAULT_CONFIG.factory, ...(config.factory || {}) },
+        permissions: getMergedPermissions(config)
     });
   }, [config]);
 
@@ -89,6 +100,23 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
           newDays = [...currentDays, dayIndex];
       }
       updateBranchSettings(branch, { weekendDays: newDays });
+  };
+
+  const toggleFinancePermission = (role: UserRole) => {
+      const currentRoles = localConfig.permissions?.financeManage || [];
+      let newRoles;
+      if (currentRoles.includes(role)) {
+          newRoles = currentRoles.filter(r => r !== role);
+      } else {
+          newRoles = [...currentRoles, role];
+      }
+      setLocalConfig(prev => ({
+          ...prev,
+          permissions: {
+              ...prev.permissions!,
+              financeManage: newRoles
+          }
+      }));
   };
 
   const handleAddHoliday = () => {
@@ -184,7 +212,16 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
       { id: 5, label: 'الجمعة' }
   ];
 
-  const currentLat = localConfig[activeTab].lat || 30.0444; // Default to Cairo if 0
+  const rolesList: {id: UserRole, label: string}[] = [
+      { id: 'owner', label: 'صاحب الشركة (Owner)' },
+      { id: 'general_manager', label: 'المدير العام' },
+      { id: 'manager', label: 'المدير المباشر' },
+      { id: 'accountant', label: 'المحاسب' },
+      { id: 'office_manager', label: 'مدير المكتب' },
+      { id: 'employee', label: 'الموظف' }
+  ];
+
+  const currentLat = localConfig[activeTab].lat || 30.0444; 
   const currentLng = localConfig[activeTab].lng || 31.2357;
   const currentRadius = localConfig[activeTab].radius || 100;
 
@@ -198,6 +235,32 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                   <span className="text-sm font-bold">تم حفظ التغييرات سحابياً</span>
               </div>
           )}
+      </div>
+
+      {/* --- Permissions Management Section --- */}
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Lock className="text-amber-500" size={20} /> إدارة الصلاحيات
+          </h3>
+          
+          <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800">
+              <h4 className="text-sm font-bold text-amber-800 dark:text-amber-400 mb-3">
+                  من يملك صلاحية (إضافة/تعديل/حذف) العهد والمصروفات؟
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {rolesList.map((roleItem) => (
+                      <label key={roleItem.id} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-amber-100/50 dark:hover:bg-amber-800/30 transition-colors">
+                          <input 
+                              type="checkbox"
+                              checked={localConfig.permissions?.financeManage?.includes(roleItem.id) || false}
+                              onChange={() => toggleFinancePermission(roleItem.id)}
+                              className="w-5 h-5 rounded text-amber-600 focus:ring-amber-500"
+                          />
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{roleItem.label}</span>
+                      </label>
+                  ))}
+              </div>
+          </div>
       </div>
 
       {/* --- Branch Settings Tabs --- */}
@@ -251,7 +314,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                     </div>
                 </div>
 
-                {/* --- Grace Period & Penalty Config (Moved Here) --- */}
+                {/* --- Grace Period & Penalty Config --- */}
                 <div className="grid grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                     <div>
                         <label className="block text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-1">
