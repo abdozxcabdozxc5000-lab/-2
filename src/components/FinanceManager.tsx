@@ -5,7 +5,7 @@ import { upsertCustody, deleteCustody, upsertExpense, deleteExpense } from '../s
 import { 
     DollarSign, FileText, TrendingUp, Clock, Briefcase, 
     ArrowRight, Plus, Search, Trash2, CheckCircle, XCircle, 
-    Moon, Sun, LogOut, Menu, X, ChevronLeft, ChevronRight, Settings, Tag, Wallet, CreditCard, User
+    Moon, Sun, LogOut, Menu, X, ChevronLeft, ChevronRight, Settings, Tag, Wallet, CreditCard, User, AlertTriangle
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
@@ -17,12 +17,11 @@ interface FinanceManagerProps {
     currentUserId: string;
     onUpdateData: () => void;
     onExit: () => void;
+    onNotify: (message: string, type: 'info' | 'success' | 'error') => void;
 }
 
 // --- DEFAULTS ---
 const DEFAULT_CATEGORIES = ['عام', 'وقود', 'صيانة', 'ضيافة', 'خامات', 'نثرية', 'كهرباء', 'إيجار'];
-
-// Custody Specific Defaults
 const DEFAULT_CUSTODY_CLASSIFICATIONS = ['عهدة مصنع', 'عهدة مكتب', 'عهدة سيارة', 'عهدة مشروع'];
 const DEFAULT_PAYMENT_METHODS = ['كاش (نقدية)', 'تحويل بنكي', 'شيك', 'فودافون كاش'];
 const DEFAULT_SOURCES = ['بلال', 'ماجد', 'خزينة المكتب', 'حساب الشركة - بنك مصر', 'حساب الشركة - CIB'];
@@ -86,7 +85,7 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
 // --- MAIN COMPONENT ---
 
 const FinanceManager: React.FC<FinanceManagerProps> = ({ 
-    employees, custodies, expenses, currentUserRole, currentUserId, onUpdateData, onExit 
+    employees, custodies, expenses, currentUserRole, currentUserId, onUpdateData, onExit, onNotify
 }) => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'custodies' | 'expenses' | 'settings'>('dashboard');
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -122,6 +121,15 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     const [modalType, setModalType] = useState<'custody' | 'expense' | null>(null);
     const [formData, setFormData] = useState<any>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Confirm Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        isDestructive?: boolean;
+    }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
     // Persistence Effects
     useEffect(() => { localStorage.setItem('mowazeb_expense_categories', JSON.stringify(expenseCategories)); }, [expenseCategories]);
@@ -170,23 +178,37 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 desc: '', 
                 classification: defaultClass,
                 paymentMethod: defaultMethod,
-                source: defaultSource 
+                source: defaultSource,
+                receivedDate: new Date().toISOString().split('T')[0]
               } 
             : { amount: '', category: defaultCategory, desc: '', date: new Date().toISOString().split('T')[0] }
         );
         setIsModalOpen(true);
     };
 
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDestructive = false) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            onConfirm: () => {
+                onConfirm();
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            },
+            isDestructive
+        });
+    };
+
     const handleSubmit = async () => {
         setIsSubmitting(true);
         if (modalType === 'custody') {
             if (!formData.empId) {
-                alert("يرجى اختيار الموظف المستلم");
+                onNotify("يرجى اختيار الموظف المستلم", "error");
                 setIsSubmitting(false);
                 return;
             }
             if (!formData.amount || parseFloat(formData.amount) <= 0) {
-                alert("يرجى إدخال مبلغ صحيح");
+                onNotify("يرجى إدخال مبلغ صحيح", "error");
                 setIsSubmitting(false);
                 return;
             }
@@ -199,29 +221,30 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 amount: parseFloat(formData.amount),
                 description: formData.desc || '',
                 type: formData.classification,
-                category: formData.classification, // Mapped to category
+                category: formData.classification, 
                 paymentMethod: formData.paymentMethod,
                 source: formData.source,
-                receivedDate: new Date().toISOString(),
+                receivedDate: formData.receivedDate ? new Date(formData.receivedDate).toISOString() : new Date().toISOString(),
                 status: 'confirmed'
             };
 
             const { error } = await upsertCustody(record);
             if (error) {
-                alert(`خطأ في الحفظ: ${error.message}`);
+                onNotify(`خطأ في الحفظ: ${error.message}`, "error");
                 setIsSubmitting(false);
                 return;
+            } else {
+                onNotify("تم إضافة العهدة بنجاح", "success");
             }
 
         } else {
-            // Expense Logic
             if (!formData.amount || parseFloat(formData.amount) <= 0) {
-                alert("يرجى إدخال مبلغ المصروف");
+                onNotify("يرجى إدخال مبلغ المصروف", "error");
                 setIsSubmitting(false);
                 return;
             }
             if (!formData.desc) {
-                alert("يرجى كتابة وصف للمصروف");
+                onNotify("يرجى كتابة وصف للمصروف", "error");
                 setIsSubmitting(false);
                 return;
             }
@@ -240,9 +263,11 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 
             const { error } = await upsertExpense(record);
             if (error) {
-                alert(`خطأ في حفظ المصروف: ${error.message}`);
+                onNotify(`خطأ في حفظ المصروف: ${error.message}`, "error");
                 setIsSubmitting(false);
                 return;
+            } else {
+                onNotify("تم إضافة المصروف بنجاح", "success");
             }
         }
         
@@ -251,36 +276,50 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
         onUpdateData();
     };
 
-    const handleAction = async (type: 'expense' | 'custody', id: string, status: string) => {
-        if (!confirm('هل أنت متأكد من تغيير الحالة؟')) return;
-        if (type === 'expense') {
-            const exp = expenses.find(e => e.id === id);
-            if (exp) await upsertExpense({ ...exp, status: status as any });
-        } else {
-            const cust = custodies.find(c => c.id === id);
-            if (cust) await upsertCustody({ ...cust, status: status as any });
-        }
-        onUpdateData();
+    const handleAction = (type: 'expense' | 'custody', id: string, status: string) => {
+        showConfirm(
+            "تغيير الحالة",
+            "هل أنت متأكد من تغيير حالة السجل؟",
+            async () => {
+                if (type === 'expense') {
+                    const exp = expenses.find(e => e.id === id);
+                    if (exp) await upsertExpense({ ...exp, status: status as any });
+                } else {
+                    const cust = custodies.find(c => c.id === id);
+                    if (cust) await upsertCustody({ ...cust, status: status as any });
+                }
+                onNotify("تم تحديث الحالة بنجاح", "success");
+                onUpdateData();
+            }
+        );
     };
 
-    const handleDelete = async (type: 'expense' | 'custody', id: string) => {
-        if (!confirm('هل أنت متأكد من الحذف؟ لا يمكن التراجع.')) return;
-        if (type === 'expense') await deleteExpense(id);
-        else await deleteCustody(id);
-        onUpdateData();
+    const handleDelete = (type: 'expense' | 'custody', id: string) => {
+        showConfirm(
+            "تأكيد الحذف",
+            "هل أنت متأكد من الحذف نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.",
+            async () => {
+                if (type === 'expense') await deleteExpense(id);
+                else await deleteCustody(id);
+                onNotify("تم الحذف بنجاح", "success");
+                onUpdateData();
+            },
+            true
+        );
     };
 
-    // --- SETTINGS LIST HANDLERS (Generic) ---
     const addItemToList = (list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
         if (item && !list.includes(item)) {
             setList([...list, item]);
+            onNotify(`تم إضافة "${item}" للقائمة`, "success");
         }
     };
 
     const removeItemFromList = (list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
-        if (confirm(`حذف "${item}" من القائمة؟`)) {
+        showConfirm("حذف تصنيف", `هل تريد حذف "${item}" من القائمة؟`, () => {
             setList(list.filter(i => i !== item));
-        }
+            onNotify("تم الحذف بنجاح", "success");
+        }, true);
     };
 
     const addCategory = () => {
@@ -323,7 +362,6 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
 
     const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'];
 
-    // --- RENDER ---
     return (
         <div className={`fixed inset-0 z-50 flex h-screen font-['Cairo'] text-right transition-colors duration-500 ${darkMode ? 'bg-[#0f172a] text-white' : 'bg-[#f8fafc] text-slate-800'}`} dir="rtl">
             
@@ -521,8 +559,12 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                             </div>
                                         </div>
                                         {canManageFinance && (
-                                            <button onClick={() => handleDelete('custody', custody.id)} className="absolute top-6 left-6 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                                                <Trash2 size={20} />
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDelete('custody', custody.id); }} 
+                                                className="absolute top-5 left-5 p-2 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-slate-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-all border border-slate-100 dark:border-slate-600 hover:border-red-200 dark:hover:border-red-800 shadow-sm"
+                                                title="حذف العهدة"
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         )}
                                     </div>
@@ -621,6 +663,34 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                     )}
                 </div>
             </main>
+
+            {/* --- CONFIRMATION MODAL --- */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className={`w-full max-w-sm p-6 rounded-[2rem] shadow-2xl relative animate-scale-in text-center ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} border-2`}>
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.isDestructive ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'}`}>
+                            <AlertTriangle size={32} />
+                        </div>
+                        <h3 className={`text-xl font-black mb-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{confirmModal.title}</h3>
+                        <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{confirmModal.message}</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={confirmModal.onConfirm} 
+                                className={`flex-1 py-3 rounded-xl font-bold text-white shadow-lg transition-all active:scale-95 ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'}`}
+                            >
+                                نعم، تأكيد
+                            </button>
+                            <button 
+                                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+                                className={`flex-1 py-3 rounded-xl font-bold transition-all ${darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- CUSTODY SETTINGS MODAL (New) --- */}
             {isCustodySettingsOpen && (
@@ -758,15 +828,26 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                 </>
                             )}
                             
-                            <div>
-                                <label className="block text-sm font-bold text-slate-500 mb-2">المبلغ (ج.م)</label>
-                                <input 
-                                    type="number" 
-                                    value={formData.amount} 
-                                    onChange={e => setFormData({...formData, amount: e.target.value})}
-                                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg text-center"
-                                    placeholder="0.00"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-500 mb-2">المبلغ (ج.م)</label>
+                                    <input 
+                                        type="number" 
+                                        value={formData.amount} 
+                                        onChange={e => setFormData({...formData, amount: e.target.value})}
+                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg text-center"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-500 mb-2">التاريخ</label>
+                                    <input 
+                                        type="date" 
+                                        value={modalType === 'custody' ? formData.receivedDate : formData.date} 
+                                        onChange={e => modalType === 'custody' ? setFormData({...formData, receivedDate: e.target.value}) : setFormData({...formData, date: e.target.value})}
+                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center"
+                                    />
+                                </div>
                             </div>
 
                             {modalType === 'expense' && (
