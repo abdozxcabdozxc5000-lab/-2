@@ -170,6 +170,9 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
         const defaultClass = custodyClassifications.length > 0 ? custodyClassifications[0] : 'عهدة مكتب';
         const defaultMethod = paymentMethods.length > 0 ? paymentMethods[0] : 'كاش';
         const defaultSource = fundingSources.length > 0 ? fundingSources[0] : 'الخزينة';
+        
+        // Get simple date string YYYY-MM-DD
+        const todayStr = new Date().toLocaleDateString('en-CA'); // 'en-CA' outputs YYYY-MM-DD
 
         setFormData(type === 'custody' 
             ? { 
@@ -179,9 +182,9 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 classification: defaultClass,
                 paymentMethod: defaultMethod,
                 source: defaultSource,
-                receivedDate: new Date().toISOString().split('T')[0]
+                receivedDate: todayStr
               } 
-            : { amount: '', category: defaultCategory, desc: '', date: new Date().toISOString().split('T')[0] }
+            : { amount: '', category: defaultCategory, desc: '', date: todayStr }
         );
         setIsModalOpen(true);
     };
@@ -224,7 +227,8 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 category: formData.classification, 
                 paymentMethod: formData.paymentMethod,
                 source: formData.source,
-                receivedDate: formData.receivedDate ? new Date(formData.receivedDate).toISOString() : new Date().toISOString(),
+                // Save as direct string YYYY-MM-DD
+                receivedDate: formData.receivedDate || new Date().toLocaleDateString('en-CA'),
                 status: 'confirmed'
             };
 
@@ -257,7 +261,8 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                 amount: parseFloat(formData.amount),
                 category: formData.category,
                 description: formData.desc,
-                date: formData.date,
+                // Save as direct string YYYY-MM-DD
+                date: formData.date || new Date().toLocaleDateString('en-CA'),
                 status: 'pending'
             };
 
@@ -542,7 +547,7 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800 dark:text-white">{custody.userName}</h4>
-                                                    <p className="text-xs text-slate-500">{new Date(custody.receivedDate).toLocaleDateString('ar-EG')}</p>
+                                                    <p className="text-xs text-slate-500">{custody.receivedDate}</p>
                                                 </div>
                                             </div>
                                             <span className={`px-3 py-1 rounded-xl text-xs font-bold ${custody.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
