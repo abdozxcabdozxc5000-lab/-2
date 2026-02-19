@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Employee, AttendanceRecord, AppConfig, UserRole } from '../types';
 import { calculateRanking, minutesToTime, Permissions, calculateDailyStats, formatTime12H, getMonthDates, generatePerformanceReview } from '../utils';
-import { Printer, Users, List, Table2, UserPlus, X, Calendar, FileSpreadsheet } from 'lucide-react';
+import { Printer, Users, List, Table2, UserPlus, X, Calendar, FileSpreadsheet, CheckSquare, Building, Factory, Square } from 'lucide-react';
 
 const MONTHS = [
     { value: 0, label: 'يناير' }, { value: 1, label: 'فبراير' }, { value: 2, label: 'مارس' },
@@ -65,6 +65,21 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
 
   const toggleEmployeeSelection = (id: string) => {
       setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkSelect = (type: 'all' | 'office' | 'factory' | 'none') => {
+      if (type === 'none') {
+          setSelectedIds([]);
+          return;
+      }
+
+      const targetIds = displayData.filter(d => {
+          if (type === 'all') return true;
+          const emp = employees.find(e => e.id === d.employeeId);
+          return emp?.branch === type;
+      }).map(d => d.employeeId);
+
+      setSelectedIds(targetIds);
   };
 
   const handlePrint = () => window.print();
@@ -136,7 +151,28 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
 
       {reportType === 'detailed' && canViewAll && (
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 print:hidden">
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><UserPlus size={18} className="text-blue-500" /> تحديد الموظفين لإدراجهم في الكشف التفصيلي</h3>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                  <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <UserPlus size={18} className="text-blue-500" /> تحديد الموظفين لإدراجهم في الكشف التفصيلي
+                  </h3>
+                  
+                  {/* --- BULK SELECTION BUTTONS --- */}
+                  <div className="flex flex-wrap gap-2">
+                      <button onClick={() => handleBulkSelect('all')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-[10px] font-bold transition-colors">
+                          <CheckSquare size={12} /> تحديد الكل
+                      </button>
+                      <button onClick={() => handleBulkSelect('office')} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-[10px] font-bold transition-colors">
+                          <Building size={12} /> موظفي المكتب
+                      </button>
+                      <button onClick={() => handleBulkSelect('factory')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-[10px] font-bold transition-colors">
+                          <Factory size={12} /> موظفي المصنع
+                      </button>
+                      <button onClick={() => handleBulkSelect('none')} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-[10px] font-bold transition-colors border border-slate-200">
+                          <Square size={12} /> إلغاء التحديد
+                      </button>
+                  </div>
+              </div>
+
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                   {displayData.map(emp => (
                       <button key={emp.employeeId} onClick={() => toggleEmployeeSelection(emp.employeeId)} className={`px-4 py-1.5 rounded-full border text-xs transition-all ${selectedIds.includes(emp.employeeId) ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
@@ -342,4 +378,3 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
 };
 
 export default Reports;
-    
