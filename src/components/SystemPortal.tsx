@@ -2,14 +2,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Fingerprint, Banknote, ShieldCheck, ArrowLeft, LogOut, Wallet } from 'lucide-react';
+import { UserRole } from '../types';
 
 interface SystemPortalProps {
     onSelectSystem: (system: 'attendance' | 'payroll' | 'finance') => void;
     onLogout: () => void;
     userName: string;
+    userRole: UserRole;
 }
 
-const SystemPortal: React.FC<SystemPortalProps> = ({ onSelectSystem, onLogout, userName }) => {
+const SystemPortal: React.FC<SystemPortalProps> = ({ onSelectSystem, onLogout, userName, userRole }) => {
+    // Define who can see the Finance Module
+    const canAccessFinance = ['owner', 'general_manager', 'accountant'].includes(userRole);
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6 relative overflow-hidden" dir="rtl">
             
@@ -44,7 +49,7 @@ const SystemPortal: React.FC<SystemPortalProps> = ({ onSelectSystem, onLogout, u
                     </motion.p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mx-auto justify-center">
                     {/* Attendance Card */}
                     <motion.div
                         whileHover={{ scale: 1.02, translateY: -5 }}
@@ -67,27 +72,29 @@ const SystemPortal: React.FC<SystemPortalProps> = ({ onSelectSystem, onLogout, u
                         </div>
                     </motion.div>
 
-                    {/* Finance / Custody Card */}
-                    <motion.div
-                        whileHover={{ scale: 1.02, translateY: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onSelectSystem('finance')}
-                        className="group cursor-pointer relative bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-[2.5rem] p-8 transition-all duration-300"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/10 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative z-10 flex flex-col items-center text-center">
-                            <div className="w-20 h-20 bg-purple-600/20 rounded-3xl flex items-center justify-center mb-6 group-hover:bg-purple-600 group-hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] transition-all duration-300">
-                                <Wallet size={40} className="text-purple-400 group-hover:text-white" />
+                    {/* Finance / Custody Card - RESTRICTED */}
+                    {canAccessFinance && (
+                        <motion.div
+                            whileHover={{ scale: 1.02, translateY: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => onSelectSystem('finance')}
+                            className="group cursor-pointer relative bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 rounded-[2.5rem] p-8 transition-all duration-300"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/10 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="relative z-10 flex flex-col items-center text-center">
+                                <div className="w-20 h-20 bg-purple-600/20 rounded-3xl flex items-center justify-center mb-6 group-hover:bg-purple-600 group-hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] transition-all duration-300">
+                                    <Wallet size={40} className="text-purple-400 group-hover:text-white" />
+                                </div>
+                                <h2 className="text-xl font-black text-white mb-2">العهد والمصروفات</h2>
+                                <p className="text-slate-400 text-xs leading-relaxed mb-6">
+                                    إدارة العهد النقدية، تسجيل المصروفات والتسويات.
+                                </p>
+                                <span className="flex items-center gap-2 text-purple-400 font-bold text-sm group-hover:translate-x-[-5px] transition-transform">
+                                    الدخول للنظام <ArrowLeft size={16} />
+                                </span>
                             </div>
-                            <h2 className="text-xl font-black text-white mb-2">العهد والمصروفات</h2>
-                            <p className="text-slate-400 text-xs leading-relaxed mb-6">
-                                إدارة العهد النقدية، تسجيل المصروفات والتسويات.
-                            </p>
-                            <span className="flex items-center gap-2 text-purple-400 font-bold text-sm group-hover:translate-x-[-5px] transition-transform">
-                                الدخول للنظام <ArrowLeft size={16} />
-                            </span>
-                        </div>
-                    </motion.div>
+                        </motion.div>
+                    )}
 
                     {/* Payroll Card */}
                     <motion.div

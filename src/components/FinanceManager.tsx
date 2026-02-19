@@ -137,8 +137,8 @@ const FinanceManager: React.FC<FinanceManagerProps> = ({
     useEffect(() => { localStorage.setItem('mowazeb_payment_methods', JSON.stringify(paymentMethods)); }, [paymentMethods]);
     useEffect(() => { localStorage.setItem('mowazeb_funding_sources', JSON.stringify(fundingSources)); }, [fundingSources]);
 
-    // Permissions
-    const canManageFinance = ['general_manager', 'owner', 'accountant', 'manager', 'office_manager'].includes(currentUserRole);
+    // Permissions: Only Owner, GM, Accountant can manage finances
+    const canManageFinance = ['general_manager', 'owner', 'accountant'].includes(currentUserRole);
 
     // Filter Logic
     const visibleCustodies = useMemo(() => {

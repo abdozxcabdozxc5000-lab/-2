@@ -176,20 +176,63 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
   const handleExtractFromGoogleUrl = () => {
       if (!googleMapsUrl) return;
 
-      const regexLatLong = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const regexQ = /q=(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const regexSearch = /search\/(-?\d+\.\d+),(-?\d+\.\d+)/;
+      let lat: number | null = null;
+      let lng: number | null = null;
 
-      let match = googleMapsUrl.match(regexLatLong) || googleMapsUrl.match(regexQ) || googleMapsUrl.match(regexSearch);
+      // 1. Priority: Extract precise coordinates from data param (!3d...!4d)
+      // This represents the exact pin location, not just the camera center.
+      // Example: ...!8m2!3d30.0594885!4d31.1884236
+      const regexData = /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/;
+      const matchData = googleMapsUrl.match(regexData);
 
-      if (match && match.length >= 3) {
-          const lat = parseFloat(match[1]);
-          const lng = parseFloat(match[2]);
+      if (matchData && matchData.length >= 3) {
+          lat = parseFloat(matchData[1]);
+          lng = parseFloat(matchData[2]);
+      }
+
+      // 2. Secondary: Try 'q=' or 'll=' parameter (Explicit Search query or LatLong)
+      // Example: maps.google.com/?q=30.059,31.188
+      if (lat === null) {
+          const regexQuery = /[?&](?:q|ll)=([-\d\.]+),([-\d\.]+)/;
+          const matchQuery = googleMapsUrl.match(regexQuery);
+          if (matchQuery && matchQuery.length >= 3) {
+              lat = parseFloat(matchQuery[1]);
+              lng = parseFloat(matchQuery[2]);
+          }
+      }
+
+      // 3. Fallback: Try '@' parameter (Viewport center)
+      // Less precise for specific buildings but good enough if no pin data exists.
+      // Example: /@30.0594885,31.1884236,17z
+      if (lat === null) {
+          const regexAt = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+          const matchAt = googleMapsUrl.match(regexAt);
+          if (matchAt && matchAt.length >= 3) {
+              lat = parseFloat(matchAt[1]);
+              lng = parseFloat(matchAt[2]);
+          }
+      }
+
+      // 4. Fallback for 'search/' path format
+      if (lat === null) {
+           const regexSearch = /search\/(-?\d+\.\d+),(-?\d+\.\d+)/;
+           const matchSearch = googleMapsUrl.match(regexSearch);
+           if (matchSearch && matchSearch.length >= 3) {
+               lat = parseFloat(matchSearch[1]);
+               lng = parseFloat(matchSearch[2]);
+           }
+      }
+
+      if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
           updateBranchSettings(activeTab, { lat, lng });
           setGoogleMapsUrl(''); // Clear input on success
           alert('تم استخراج الموقع بنجاح!');
       } else {
-          alert('تعذر استخراج الإحداثيات من الرابط. تأكد من نسخ رابط كامل من شريط العنوان في المتصفح بعد تحديد الموقع.');
+          if (googleMapsUrl.includes('goo.gl') || googleMapsUrl.includes('maps.app.goo.gl')) {
+               alert('عذراً، الروابط المختصرة (goo.gl) لا تعمل مباشرة. يرجى فتح الرابط في المتصفح أولاً ثم نسخ الرابط الطويل من شريط العنوان.');
+          } else {
+               alert('تعذر استخراج الإحداثيات. تأكد من نسخ رابط كامل يحتوي على إحداثيات (أرقام).');
+          }
       }
   };
 
@@ -450,7 +493,7 @@ const Settings: React.FC<SettingsProps> = ({ config, onConfigChange, userRole })
                                     </button>
                                 </div>
                                 <div className="text-[10px] text-slate-400">
-                                    * حدد المكان على الخريطة، انسخ الرابط من المتصفح (URL) بالكامل، ثم الصقه هنا.
+                                    * حدد المكان، انسخ الرابط من المتصفح بالكامل، ثم الصقه هنا. يفضل استخدام الرابط الذي يحتوي على (!3d) للدقة.
                                 </div>
                             </div>
                          </div>
