@@ -294,6 +294,24 @@ function App() {
           notify(`تم تسجيل حضور ${employeeName}`, 'success');
           return { status: 'in', time: timeStr, message: `تم تسجيل دخول ${timeStr}` };
       } else if (todayRecord.checkIn && !todayRecord.checkOut) {
+          // --- Safety Check: Prevent immediate sign-out ---
+          if (todayRecord.checkIn) {
+              const checkInParts = todayRecord.checkIn.split(':');
+              const checkInTime = new Date();
+              checkInTime.setHours(parseInt(checkInParts[0]), parseInt(checkInParts[1]), 0);
+              const diffMinutes = (new Date().getTime() - checkInTime.getTime()) / 60000;
+
+              // Prevent checkout if less than 5 minutes have passed since check-in
+              if (diffMinutes < 5) {
+                  return { 
+                      status: 'error', 
+                      time: timeStr, 
+                      message: `عفواً، لا يمكن تسجيل الانصراف قبل مرور 5 دقائق على الأقل من تسجيل الحضور.` 
+                  };
+              }
+          }
+          // ------------------------------------------------
+
           newRecord = { ...todayRecord, checkOut: timeStr, source: 'device', photo: photo || todayRecord.photo };
           setAttendanceRecords(prev => prev.map(r => r.id === todayRecordId ? newRecord : r));
           addLog('ATTENDANCE', `Device: ${employeeName}`, `خروج ${timeStr}`);
