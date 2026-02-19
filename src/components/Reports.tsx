@@ -232,7 +232,9 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
                                     <td className="p-3 border-l text-center font-mono">{minutesToTime(row.totalDelay)}</td>
                                     <td className="p-3 border-l text-center font-bold text-red-600">{row.unexcusedAbsences}</td>
                                     <td className="p-3 border-l text-center font-mono">{minutesToTime(row.totalRawOvertime)}</td>
-                                    <td className="p-3 border-l text-center font-black text-blue-700">{minutesToTime(row.totalNetOvertime)}</td>
+                                    <td className={`p-3 border-l text-center font-black dir-ltr ${row.totalNetOvertime < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                                        {minutesToTime(row.totalNetOvertime)}
+                                    </td>
                                     <td className="p-3 border-l">
                                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                                             <div className="bg-slate-700 h-full" style={{ width: `${row.commitmentScore}%` }}></div>
@@ -297,7 +299,9 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
                                 </div>
                                 <div className="text-center">
                                     <p className="text-[10px] text-slate-400 font-black uppercase mb-1">صافي الإضافي</p>
-                                    <p className="text-3xl font-black text-emerald-600 font-mono">{minutesToTime(emp.totalNetOvertime)}</p>
+                                    <p className={`text-3xl font-black font-mono dir-ltr ${emp.totalNetOvertime < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        {minutesToTime(emp.totalNetOvertime)}
+                                    </p>
                                 </div>
                              </div>
                         </div>
@@ -350,7 +354,9 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
                                                     <td className="p-3 border-l text-center font-black text-red-600">{stats.delayMinutes || '-'}</td>
                                                     <td className="p-3 border-l text-center font-mono">{minutesToTime(stats.overtimeMinutes) || '-'}</td>
                                                     <td className="p-3 border-l text-center font-black text-orange-600">{stats.earlyDepartureMinutes || '-'}</td>
-                                                    <td className="p-3 border-l text-center font-black text-blue-700">{minutesToTime(stats.netOvertimeMinutes) || '-'}</td>
+                                                    <td className={`p-3 border-l text-center font-black dir-ltr ${stats.netOvertimeMinutes < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                                                        {minutesToTime(stats.netOvertimeMinutes) || '-'}
+                                                    </td>
                                                     <td className="p-3 text-slate-400 italic text-[9px]">{record?.note || ''}</td>
                                                 </tr>
                                             );
@@ -360,7 +366,9 @@ const Reports: React.FC<ReportsProps> = ({ employees, attendanceRecords, config,
                                             <td className="p-3 border-l text-center font-mono">{minutesToTime(emp.totalDelay)}</td>
                                             <td className="p-3 border-l text-center font-mono">{minutesToTime(emp.totalRawOvertime)}</td>
                                             <td className="p-3 border-l text-center">-</td>
-                                            <td className="p-3 border-l text-center font-mono text-blue-700">{minutesToTime(emp.totalNetOvertime)}</td>
+                                            <td className={`p-3 border-l text-center font-mono dir-ltr ${emp.totalNetOvertime < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                                                {minutesToTime(emp.totalNetOvertime)}
+                                            </td>
                                             <td className="p-3"></td>
                                         </tr>
                                     </tbody>

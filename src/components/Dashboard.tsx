@@ -199,7 +199,7 @@ const Dashboard: React.FC<DashboardProps> = ({ employees, attendanceRecords, con
                   </div>
                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                       <div className="text-slate-500 dark:text-slate-400 mb-2">ساعات الإضافي (الصافي)</div>
-                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round(myData.totalNetOvertime / 60)} ساعة</div>
+                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 dir-ltr">{Math.round(myData.totalNetOvertime / 60)} ساعة</div>
                   </div>
                   <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                       <div className="text-slate-500 dark:text-slate-400 mb-2">نقاط مخصومة</div>
@@ -349,7 +349,9 @@ const Dashboard: React.FC<DashboardProps> = ({ employees, attendanceRecords, con
                                     <td className="p-3 font-bold text-blue-600">{row.score}</td>
                                     <td className="p-3 text-red-600">{minutesToTime(row.totalDelay)}</td>
                                     <td className="p-3 text-red-800 font-bold">{row.unexcusedAbsences}</td>
-                                    <td className="p-3 text-emerald-600 font-bold">{minutesToTime(row.totalNetOvertime)}</td>
+                                    <td className={`p-3 font-bold dir-ltr ${row.totalNetOvertime < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        {minutesToTime(row.totalNetOvertime)}
+                                    </td>
                                     <td className="p-3 text-center">
                                         <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 max-w-[50px] mx-auto overflow-hidden">
                                             <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${row.commitmentScore}%` }}></div>

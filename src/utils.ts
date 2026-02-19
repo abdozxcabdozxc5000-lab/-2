@@ -20,9 +20,11 @@ const timeToMinutes = (time: string): number => {
 };
 
 export const minutesToTime = (minutes: number): string => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  const isNegative = minutes < 0;
+  const absMinutes = Math.abs(minutes);
+  const h = Math.floor(absMinutes / 60);
+  const m = absMinutes % 60;
+  return `${isNegative ? '-' : ''}${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 };
 
 export const formatTime12H = (time24?: string): string => {
@@ -200,7 +202,8 @@ export const calculateDailyStats = (dateStr: string, config: AppConfig, record?:
         delayPenalty = Math.max(0, delay - gracePeriod);
     }
 
-    netOvertime = Math.max(0, rawOvertime - delayPenalty - earlyDepartureDeduction);
+    // UPDATED: Allow negative net overtime (if deductions > additions)
+    netOvertime = rawOvertime - delayPenalty - earlyDepartureDeduction;
 
     if (record.status === 'absent') {
         defaultStats.statusLabel = 'غياب';
