@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Employee, AttendanceRecord, AppConfig, UserRole } from '../types';
 import SmartCalendar from './SmartCalendar';
@@ -39,7 +38,7 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
       id?: string; 
       checkIn: string; 
       checkOut: string; 
-      checkOutDate: string; // Ensure this exists
+      checkOutDate: string; 
       status: string; 
       earlyPermission: boolean;
       note: string;
@@ -61,7 +60,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
       if (editingDate && checkInRef.current) {
           setTimeout(() => {
               checkInRef.current?.focus();
-              checkInRef.current?.select();
           }, 100);
       }
   }, [editingDate]);
@@ -87,7 +85,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
           id: record?.id,
           checkIn: record?.checkIn || '',
           checkOut: record?.checkOut || '',
-          // Important: Default checkOutDate to current date if undefined
           checkOutDate: record?.checkOutDate || date, 
           status: record?.status || 'present',
           earlyPermission: record?.earlyDeparturePermission || false,
@@ -104,7 +101,7 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
           date: editingDate,
           checkIn: editForm.checkIn.trim() || undefined,
           checkOut: editForm.checkOut.trim() || undefined,
-          checkOutDate: editForm.checkOutDate || editingDate, // Ensure value is passed
+          checkOutDate: editForm.checkOutDate || editingDate, 
           status: editForm.status as any,
           earlyDeparturePermission: editForm.earlyPermission,
           note: editForm.note.trim() || undefined 
@@ -140,10 +137,8 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
           e.preventDefault();
           if (field === 'checkIn') {
               checkOutRef.current?.focus();
-              checkOutRef.current?.select();
           } else if (field === 'checkOut') {
               noteRef.current?.focus();
-              noteRef.current?.select();
           } else if (field === 'note') {
               handleSave();
           }
@@ -200,8 +195,7 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
         />
 
         {editingDate && canEdit && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-                {/* Added max-h-[90vh] and overflow-y-auto to fix visibility on small screens */}
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
                 <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-scale-in border border-slate-100 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
                     
                     {!showDeleteConfirm ? (
@@ -231,10 +225,12 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
                                         </label>
                                         <input 
                                             ref={checkInRef}
-                                            type="time" value={editForm.checkIn}
+                                            type="time" 
+                                            value={editForm.checkIn}
                                             onChange={e => setEditForm({...editForm, checkIn: e.target.value})}
                                             onKeyDown={e => handleInputKeyDown(e, 'checkIn')}
-                                            className="w-full bg-transparent outline-none dir-ltr dark:text-white font-mono text-xl font-bold"
+                                            style={{ direction: 'ltr' }}
+                                            className="w-full bg-transparent outline-none dark:text-white font-mono text-xl font-bold"
                                         />
                                     </div>
                                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
@@ -243,15 +239,16 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
                                         </label>
                                         <input 
                                             ref={checkOutRef}
-                                            type="time" value={editForm.checkOut}
+                                            type="time" 
+                                            value={editForm.checkOut}
                                             onChange={e => setEditForm({...editForm, checkOut: e.target.value})}
                                             onKeyDown={e => handleInputKeyDown(e, 'checkOut')}
-                                            className="w-full bg-transparent outline-none dir-ltr dark:text-white font-mono text-xl font-bold"
+                                            style={{ direction: 'ltr' }}
+                                            className="w-full bg-transparent outline-none dark:text-white font-mono text-xl font-bold"
                                         />
                                     </div>
                                 </div>
 
-                                {/* --- Check Out Date Field (EXPLICITLY ADDED HERE) --- */}
                                 <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-2xl border border-blue-100 dark:border-blue-800/30">
                                     <label className="block text-[10px] font-black text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
                                         <Calendar size={10} /> تاريخ الانصراف (هام للورديات الليلية)
@@ -265,11 +262,11 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5 mr-1">الحالة الإدارية</label>
+                                    <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-1.5">الحالة الإدارية</label>
                                     <select 
                                         value={editForm.status}
                                         onChange={e => setEditForm({...editForm, status: e.target.value})}
-                                        className="w-full p-3 border-2 border-slate-100 rounded-xl outline-none focus:border-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-sm transition-all"
+                                        className="w-full p-3.5 border-2 border-slate-100 rounded-xl outline-none focus:border-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold text-sm transition-all appearance-none"
                                     >
                                         <option value="present">حضور (ملتزم)</option>
                                         <option value="absent">غياب (بإذن)</option>
@@ -291,7 +288,7 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5 mr-1 flex items-center gap-1">
+                                    <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-1.5 mr-1 flex items-center gap-1">
                                         <FileText size={12} /> {noteLabel}
                                     </label>
                                     <textarea
@@ -343,78 +340,6 @@ const EmployeeManager: React.FC<EmployeeManagerProps> = ({ employees, attendance
         )}
       </div>
     );
-  }
-
-  return (
-    <div className="space-y-6 animate-fade-in">
-       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-           <div>
-               <h2 className="text-2xl font-bold text-slate-800 dark:text-white">سجل الحضور والانصراف</h2>
-               <p className="text-slate-500 dark:text-slate-400">عرض وتعديل سجلات الموظفين الشهرية</p>
-           </div>
-
-           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-               {userRole !== 'office_manager' && (
-                   <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-xl w-full md:w-auto">
-                        <button 
-                            onClick={() => setSelectedBranch('all')}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${selectedBranch === 'all' ? 'bg-white shadow text-blue-600' : 'text-slate-500 dark:text-slate-300'}`}
-                        >
-                            <Users size={14} /> الكل
-                        </button>
-                        <button 
-                            onClick={() => setSelectedBranch('office')}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${selectedBranch === 'office' ? 'bg-white shadow text-blue-600' : 'text-slate-500 dark:text-slate-300'}`}
-                        >
-                            <Building size={14} /> المكتب
-                        </button>
-                        <button 
-                            onClick={() => setSelectedBranch('factory')}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${selectedBranch === 'factory' ? 'bg-white shadow text-blue-600' : 'text-slate-500 dark:text-slate-300'}`}
-                        >
-                            <Factory size={14} /> المصنع
-                        </button>
-                   </div>
-               )}
-
-               <div className="relative w-full md:w-auto">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="بحث باسم الموظف..." 
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full md:w-64 pr-10 pl-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    />
-               </div>
-           </div>
-       </div>
-
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-           {filteredEmployees.map(emp => (
-               <div key={emp.id} onClick={() => setSelectedEmployee(emp)} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group">
-                   <div className="flex items-center gap-4">
-                       <img src={emp.avatar} alt={emp.name} className="w-14 h-14 rounded-full object-cover group-hover:scale-105 transition-transform" />
-                       <div>
-                           <h3 className="font-bold text-slate-800 dark:text-white group-hover:text-blue-600 transition-colors">{emp.name}</h3>
-                           <div className="flex items-center gap-2">
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{emp.position}</p>
-                                {emp.branch === 'factory' ? 
-                                    <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">مصنع</span> :
-                                    <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full font-bold">مكتب</span>
-                                }
-                           </div>
-                           <span className="text-[10px] text-slate-400 mt-1 block">{emp.department}</span>
-                       </div>
-                       <div className="mr-auto text-slate-300 group-hover:text-blue-500 transition-colors">
-                           <ArrowRight size={20} className="transform rotate-180" />
-                       </div>
-                   </div>
-               </div>
-           ))}
-       </div>
-    </div>
-  );
 };
 
 export default EmployeeManager;
